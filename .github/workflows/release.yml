@@ -130,12 +130,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
-          cat > notes.md <<'EOF'
-          > **The Windows installer is untested.** It is built by CI and has never been run on a real Windows machine. Unzip `Cairn-*-x64-Setup.zip` and run `Cairn-Setup.exe`, keeping the `.installer` folder beside it. It is unsigned, so SmartScreen asks for **More info → Run anyway**. Please [open an issue](https://github.com/jiehaoZ/Cairn/issues) if it misbehaves.
-          >
-          > **Windows 安装包未经测试。** 它由 CI 自动构建，还没有在真实的 Windows 机器上运行过。解压 `Cairn-*-x64-Setup.zip` 后运行 `Cairn-Setup.exe`，`.installer` 文件夹要一起保留；没有签名，SmartScreen 会拦截，需要点"更多信息 → 仍要运行"。遇到问题欢迎提 issue。
-          EOF
-          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --title "Cairn $VERSION" --notes-file notes.md --generate-notes
+          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --title "Cairn $VERSION" --generate-notes
 
   homebrew:
     needs: [check, publish]
