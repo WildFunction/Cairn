@@ -19,7 +19,7 @@ export function Causes({ heading, effect, groups, focus, aside, shown }: Props):
     <div className="s">
       {heading && <h2 className="s-h2" data-fit={fitOf(heading, 'heading')}>{heading}</h2>}
       <div className="s-fb" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr)) 17cqw` }}>
-        <span className="s-fb-spine" aria-hidden="true" />
+        <span className={`s-fb-spine ${shown > 1 ? 'in' : 'out'}`} aria-hidden="true" />
         {groups.map((group, i) => (
           <Bone
             key={group.name}

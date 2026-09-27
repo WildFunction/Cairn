@@ -5,9 +5,9 @@ import { Aside } from './Aside';
 
 type Props = Extract<Slide, { layout: 'cycle' }> & { readonly shown: number };
 
-/** Ring radii in cqw. `.s-cy-ring` in slide.css draws the same ellipse; move them together. */
+/** Ring radii in cqw. `.s-cy-ring` in diagram.css sizes the same ellipse; move them together. */
 const RX = 30;
-const RY = 10;
+const RY = 12;
 
 const at = (angle: number): { left: string; top: string } => ({
   left: `calc(50% + ${(RX * Math.cos(angle)).toFixed(2)}cqw)`,
@@ -16,6 +16,16 @@ const at = (angle: number): { left: string; top: string } => ({
 
 /** Clockwise from the top, so the loop reads the way a clock does. */
 const angleOf = (i: number, n: number): number => -Math.PI / 2 + (2 * Math.PI * i) / n;
+
+/** The ring from node `i` to the next, in the ring's own viewBox (cqw from its top left). */
+function arc(i: number, n: number): string {
+  const point = (angle: number): string =>
+    `${(RX + RX * Math.cos(angle)).toFixed(3)} ${(RY + RY * Math.sin(angle)).toFixed(3)}`;
+  return `M ${point(angleOf(i, n))} A ${RX} ${RY} 0 0 1 ${point(angleOf(i + 1, n))}`;
+}
+
+/** Segment `i` joins node `i` to the next, so it is drawn when that next node arrives. */
+const joined = (i: number, n: number, shown: number): boolean => Math.min(i + 2, n) <= shown;
 
 /**
  * A loop the book closes. Unlike `flow` there is no last step: the arrow out of
@@ -28,7 +38,11 @@ export function Cycle({ heading, steps, focus, aside, shown }: Props): ReactElem
     <div className="s">
       {heading && <h2 className="s-h2" data-fit={fitOf(heading, 'heading')}>{heading}</h2>}
       <div className="s-cy">
-        <div className="s-cy-ring" aria-hidden="true" />
+        <svg className="s-cy-ring" viewBox={`0 0 ${RX * 2} ${RY * 2}`} aria-hidden="true">
+          {steps.map((_, i) => (
+            <path key={`arc-${i}`} className={joined(i, n, shown) ? 'in' : 'out'} d={arc(i, n)} />
+          ))}
+        </svg>
         {steps.map((_, i) => {
           const mid = (angleOf(i, n) + angleOf(i + 1, n)) / 2;
           const tangent = Math.atan2(RY * Math.cos(mid), -RX * Math.sin(mid));
@@ -36,7 +50,7 @@ export function Cycle({ heading, steps, focus, aside, shown }: Props): ReactElem
             <i
               key={`arrow-${i}`}
               aria-hidden="true"
-              className={`s-cy-arrow ${Math.min(i + 2, n) <= shown ? 'in' : 'out'}`}
+              className={`s-cy-arrow ${joined(i, n, shown) ? 'in' : 'out'}`}
               style={{ ...at(mid), transform: `translate(-50%, -50%) rotate(${tangent}rad)` }}
             />
           );

@@ -14,7 +14,7 @@ export function Timeline({ heading, items, shown }: Props): ReactElement {
       {heading && <h2 className="s-h2" data-fit={fitOf(heading, 'heading')}>{heading}</h2>}
       <ol className="s-tl">
         {items.map((item, i) => (
-          <li key={`${item.mark}${item.text}`} className={i < shown ? 'in' : 'out'}>
+          <li key={`${item.mark}${item.text}`} className={`${i < shown ? 'in' : 'out'}${i + 1 < shown ? ' joined' : ''}`}>
             <span className="s-tl-mark" data-fit={markFit}>{item.mark}</span>
             <span className="s-tl-dot" aria-hidden="true" />
             <span className="s-tl-text" data-fit={textFit}>{item.text}</span>

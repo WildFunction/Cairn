@@ -20,7 +20,9 @@ export function Flow({ heading, steps, aside, shown }: Props): ReactElement {
               <i className="s-node-i" aria-hidden="true" />
               <span className="s-node-t">{step}</span>
             </span>
-            {i < steps.length - 1 && <span className="s-link" aria-hidden="true" />}
+            {i < steps.length - 1 && (
+              <span className={`s-link ${i + 1 < shown ? 'in' : 'out'}`} aria-hidden="true" />
+            )}
           </li>
         ))}
       </ol>

@@ -3,15 +3,16 @@
 
 /* ---- cycle ----
 
-   Nodes sit on one ellipse, clockwise from the top. Its radii (30cqw by 10cqw)
+   Nodes sit on one ellipse, clockwise from the top. Its radii (30cqw by 12cqw)
    are also written in Cycle.tsx, which places the nodes on it. */
-.s-cy { position: relative; height: 26cqw; }
+.s-cy { position: relative; height: 30cqw; }
 .s-cy ol { list-style: none; }
 .s-cy-ring {
-  position: absolute; left: calc(50% - 30cqw); top: calc(50% - 10cqw);
-  width: 60cqw; height: 20cqw; border-radius: 50%;
-  border: 1px solid #e0a45840;
+  position: absolute; left: calc(50% - 30cqw); top: calc(50% - 12cqw);
+  width: 60cqw; height: 24cqw; overflow: visible;
+  fill: none; stroke: #e0a45840; stroke-width: 1px;
 }
+.s-cy-ring path { vector-effect: non-scaling-stroke; }
 .s-cy-node {
   position: absolute; translate: -50% -50%;
   max-width: 24cqw; white-space: nowrap;

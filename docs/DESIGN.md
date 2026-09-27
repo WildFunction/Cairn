@@ -181,6 +181,9 @@ Four rules hold across all fourteen:
   above it. Evenly spaced beats put a card on screen *after* the sentence that introduced it,
   which reads as the deck lagging the voice. Everything is derived from audio time, so a scrub
   backwards folds the slide up again — an entry animation would replay out of step.
+  A connector — `flow`'s link, `timeline`'s spine, a `cycle` arc, the fishbone's spine and
+  bones — arrives with the item it leads to, not the one it leaves: drawn early, it points at
+  nothing, and a closed `cycle` ring would state the loop before the narration has.
 - **No layout invents its own material.** `number`, `timeline`, `matrix`, `relation` and the five
   diagram layouts draw only on the material the map stage extracted (`figures`, `sequences`,
   `contrasts`, `relations`, `cycles`, `ranks`, `quadrants`, `overlaps`, `causes`). These look
