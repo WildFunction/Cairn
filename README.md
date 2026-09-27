@@ -26,11 +26,18 @@ deeply you want to know the book.
 
 ## Download
 
-Get the DMG from the [latest release](https://github.com/jiehaoZ/Cairn/releases/latest). So far it has only
-been tested on Apple Silicon Macs.
+On an Apple Silicon Mac, install it with [Homebrew](https://brew.sh):
 
-The app is not notarized. If macOS says it is damaged or cannot be opened, run this once after
-moving it to Applications:
+```bash
+brew install --cask jiehaoZ/tap/cairn
+```
+
+`brew upgrade --cask cairn` picks up new releases. Or get the DMG from the
+[latest release](https://github.com/jiehaoZ/Cairn/releases/latest). So far it has only been tested on
+Apple Silicon Macs.
+
+The app is not notarized. Homebrew takes care of that; if you installed the DMG yourself and macOS
+says the app is damaged or cannot be opened, run this once after moving it to Applications:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Cairn.app

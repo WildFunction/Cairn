@@ -25,9 +25,15 @@ Cairn 把一本书变成一组带朗读的短片，短片的时长由你希望�
 
 ## 下载
 
-从 [最新 Release](https://github.com/jiehaoZ/Cairn/releases/latest) 下载 DMG。目前只在 Apple Silicon 的 Mac 上测试过。
+Apple Silicon 的 Mac 可以用 [Homebrew](https://brew.sh) 安装：
 
-应用没有经过 Apple 公证。如果 macOS 提示"已损坏"或"无法打开"，把应用拖进"应用程序"后运行一次：
+```bash
+brew install --cask jiehaoZ/tap/cairn
+```
+
+之后用 `brew upgrade --cask cairn` 更新。也可以从 [最新 Release](https://github.com/jiehaoZ/Cairn/releases/latest) 下载 DMG。目前只在 Apple Silicon 的 Mac 上测试过。
+
+应用没有经过 Apple 公证。用 Homebrew 安装会自动处理；如果是自己装的 DMG，macOS 提示"已损坏"或"无法打开"时，把应用拖进"应用程序"后运行一次：
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Cairn.app
