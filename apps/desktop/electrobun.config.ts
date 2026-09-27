@@ -1,7 +1,7 @@
 import type { ElectrobunConfig } from 'electrobun';
 
 export default {
-  app: { name: 'Cairn', identifier: 'dev.cairn.app', version: '0.1.3' },
+  app: { name: 'Cairn', identifier: 'dev.cairn.app', version: '0.1.4' },
   build: {
     mainProcess: 'cottontail',
     cottontail: { entrypoint: 'src/main/index.ts' },
