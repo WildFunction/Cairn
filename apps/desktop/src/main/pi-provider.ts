@@ -96,6 +96,10 @@ export interface PiProviderConfig {
 export function piLlmProvider(config: PiProviderConfig): LlmProvider {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
+  // Named: with no key set, the route may be a `codex login` the reader forgot about
+  const failed = (detail: string): LlmError =>
+    new LlmError('模型接口请求失败', 'provider_failed', `${config.providerId}: ${detail}`.slice(0, 300));
+
   return {
     name: `pi:${config.providerId}`,
     suggestedConcurrency: CONCURRENCY,
@@ -128,8 +132,7 @@ export function piLlmProvider(config: PiProviderConfig): LlmProvider {
             : new LlmError('模型接口超时', 'timeout');
         }
         if (reply.stopReason === 'error') {
-          // Named: with no key set, the route may be a `codex login` the reader forgot about
-          throw new LlmError('模型接口请求失败', 'provider_failed', `${config.providerId}: ${reply.errorMessage ?? ''}`.slice(0, 300));
+          throw failed(reply.errorMessage ?? '');
         }
         if (reply.stopReason === 'length') {
           // The old HTTP path never looked at this, so a truncated reply surfaced
@@ -142,7 +145,7 @@ export function piLlmProvider(config: PiProviderConfig): LlmProvider {
         if (cause instanceof LlmError) throw cause;
         if (request.signal?.aborted) throw new LlmError('调用已取消', 'aborted');
         if (controller.signal.aborted) throw new LlmError('模型接口超时', 'timeout');
-        throw new LlmError('模型接口请求失败', 'provider_failed', String(cause).slice(0, 300));
+        throw failed(String(cause));
       } finally {
         clearTimeout(timer);
         request.signal?.removeEventListener('abort', onAbort);

@@ -110,6 +110,19 @@ describe('piLlmProvider', () => {
     });
   });
 
+  test('a call that throws names who failed too', async () => {
+    const { model } = scripted([]).build('faux', 'faux-1');
+    const throwing = { completeSimple: async () => { throw new Error('ECONNREFUSED'); } };
+    const llm = piLlmProvider({
+      providerId: 'openai', apiKey: 'k', model: 'faux-1',
+      build: (() => ({ models: throwing, model })) as never,
+    });
+
+    await expect(llm.complete({ prompt: 'p' })).rejects.toMatchObject({
+      code: 'provider_failed', detail: 'openai: Error: ECONNREFUSED',
+    });
+  });
+
   // The old HTTP path never read `finish_reason`, so truncation surfaced as
   // "not valid JSON" — true, and useless.
   test('truncation says it was truncated', async () => {

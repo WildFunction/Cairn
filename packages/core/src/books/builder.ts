@@ -203,7 +203,7 @@ export function createBookBuilder(deps: BookBuilderDeps): BookBuilder {
         kind,
         onProgress: (p) => onProgress({ stage: 'map', done: p.done + p.failed, total: p.total }),
       });
-      // Every batch failing is the model refusing (no credit, a bad key), and only its error says so
+      // When no batch survived, the first failure says why (no credit, a bad key, a timeout)
       if (notes.length === 0) throw job.failures[0]?.error ?? new CairnError('map_empty');
 
       onProgress({ stage: 'classify', done: 0, total: 1 });
