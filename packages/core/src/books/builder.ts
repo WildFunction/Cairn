@@ -198,12 +198,13 @@ export function createBookBuilder(deps: BookBuilderDeps): BookBuilder {
       const kind = book.kind ?? 'book';
 
       const mapStore = await fileStore<readonly ChapterNote[]>(join(library.cacheDir(id), 'map.json'));
-      const { notes } = await mapChapters(book.chapters, provider, mapStore, {
+      const { notes, job } = await mapChapters(book.chapters, provider, mapStore, {
         locale: book.language,
         kind,
         onProgress: (p) => onProgress({ stage: 'map', done: p.done + p.failed, total: p.total }),
       });
-      if (notes.length === 0) throw new CairnError('map_empty');
+      // Every batch failing is the model refusing (no credit, a bad key), and only its error says so
+      if (notes.length === 0) throw job.failures[0]?.error ?? new CairnError('map_empty');
 
       onProgress({ stage: 'classify', done: 0, total: 1 });
       const cls = await classifyBook(book.title, notes, provider, undefined, book.language, kind);

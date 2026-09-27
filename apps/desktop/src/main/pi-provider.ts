@@ -128,7 +128,8 @@ export function piLlmProvider(config: PiProviderConfig): LlmProvider {
             : new LlmError('模型接口超时', 'timeout');
         }
         if (reply.stopReason === 'error') {
-          throw new LlmError('模型接口请求失败', 'provider_failed', (reply.errorMessage ?? '').slice(0, 300));
+          // Named: with no key set, the route may be a `codex login` the reader forgot about
+          throw new LlmError('模型接口请求失败', 'provider_failed', `${config.providerId}: ${reply.errorMessage ?? ''}`.slice(0, 300));
         }
         if (reply.stopReason === 'length') {
           // The old HTTP path never looked at this, so a truncated reply surfaced

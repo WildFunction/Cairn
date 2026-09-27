@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BookBuilder, bookIdFor, createBookBuilder } from '../../src/books/builder';
 import type { DeckStatus } from '../../src/books/progress';
-import type { LlmProvider, LlmRequest } from '../../src/llm/types';
+import { payloadOf } from '../../src/errors';
+import { LlmError, type LlmProvider, type LlmRequest } from '../../src/llm/types';
 import { DEFAULT_VOICE, type Narrator, type TtsOptions } from '../../src/pipeline/tts';
 import { type Library, openLibrary } from '../../src/store/library-disk';
 import type { DraftDeck, NodeDeck, ParsedBook, Path } from '../../src/types';
@@ -133,6 +134,19 @@ describe('generate', () => {
     await settled;
     expect(entry.kind).toBeUndefined();
     expect(requests.some((r) => r.system?.includes(NOTES_MARK))).toBe(false);
+  });
+
+  test('a model that refuses every call says why, not that the notes came back empty', async () => {
+    const refusing = createBookBuilder({
+      library, narrator: narrator(),
+      providerFor: async () => ({
+        name: 'stub', suggestedConcurrency: 2, overheadTokens: 0,
+        async complete() { throw new LlmError('模型接口请求失败', 'provider_failed', 'Payment Required'); },
+      }),
+      voiceFor: async () => DEFAULT_VOICE,
+    });
+    const failure = await refusing.generate(book, '/books/refused.txt', 'brief').then(() => undefined, (e: unknown) => e);
+    expect(payloadOf(failure)).toMatchObject({ code: 'llm_failed', detail: 'Payment Required' });
   });
 
   test('the generation cache sits under the library, where resume and remove look for it', async () => {

@@ -100,13 +100,13 @@ describe('piLlmProvider', () => {
    * `stopReason` would read a failed call as an empty reply and report a
    * nonsensical JSON error.
    */
-  test('a provider error becomes provider_failed, not an empty reply', async () => {
+  test('a provider error becomes provider_failed, not an empty reply, and names who refused', async () => {
     const { llm } = provider([
       fauxAssistantMessage([], { stopReason: 'error', errorMessage: 'rate limited' }),
     ]);
 
     await expect(llm.complete({ prompt: 'p' })).rejects.toMatchObject({
-      code: 'provider_failed', detail: 'rate limited',
+      code: 'provider_failed', detail: 'openai: rate limited',
     });
   });
 
