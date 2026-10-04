@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const RATES = [0.75, 1, 1.25, 1.5, 2, 3] as const;
+/** What a held → plays at. ↑ / ↓ move through them while the key is down. */
+export const HOLD_RATES = [1.5, 2, 3] as const;
+const DEFAULT_HOLD_RATE = 2;
 
 /** What the transport drives: `<audio>`'s own names, so either can stand behind it. */
 export type TransportMedia = Pick<
@@ -15,7 +18,6 @@ const HOLD_MS = 180;
 /** Audio cannot play backwards, so holding left rewinds by repeated seeks instead. */
 const REWIND_TICK_MS = 100;
 const REWIND_STEP_S = 0.8;
-const MAX_RATE = 4;
 /** One press of ↑ / ↓. Ten steps across the range is enough to aim with. */
 const VOLUME_STEP = 0.1;
 
@@ -28,9 +30,16 @@ export function seekDistance(rate: number): number {
   return SEEK_BASE_S * rate;
 }
 
-/** Holding doubles the current rate rather than jumping to a fixed one, so it always does something. */
-export function boostedRate(rate: number): number {
-  return Math.min(MAX_RATE, rate * 2);
+/** The reader's last tier, unless the dial is already that fast — a hold should always do something. */
+export function holdRate(rate: number, preferred: number): number {
+  if (preferred > rate) return preferred;
+  return HOLD_RATES.find((r) => r > rate) ?? HOLD_RATES[HOLD_RATES.length - 1]!;
+}
+
+/** One tier along, stopping at the ends: a wheel that wrapped would jump 3x to 1.5x. */
+export function stepHoldRate(current: number, delta: 1 | -1): number {
+  const at = HOLD_RATES.indexOf(current as (typeof HOLD_RATES)[number]);
+  return HOLD_RATES[Math.min(HOLD_RATES.length - 1, Math.max(0, at + delta))]!;
 }
 
 export function nextRate(rate: number): number {
@@ -41,6 +50,8 @@ export function nextRate(rate: number): number {
 export interface Transport {
   readonly rate: number;
   readonly boosting: boolean;
+  /** The speed a held → is playing at. Absent when nothing is held, and while rewinding. */
+  readonly boost: number | undefined;
   readonly volume: number;
   readonly muted: boolean;
   setRate: (rate: number) => void;
@@ -57,11 +68,9 @@ export interface Transport {
  * Keyboard transport for the deck.
  *
  *   tap  ← / →   seek 5s, scaled by rate — at 2x a tap covers 10s
- *   hold →       play faster while held
+ *   hold →       play faster while held; ↑ / ↓ pick how fast
  *   hold ←       rewind continuously (no negative playbackRate exists)
  *   space        play / pause
- *
- * Station changes (↑ / ↓) belong to the app, not here: they are not transport.
  */
 export function useTransport(
   audio: React.RefObject<TransportMedia | null>,
@@ -72,6 +81,7 @@ export function useTransport(
 ): Transport {
   const [rate, setRateState] = useState(initialRate);
   const [boosting, setBoosting] = useState(false);
+  const [boost, setBoostState] = useState<number>();
   const [volume, setVolumeState] = useState(1);
   const [muted, setMuted] = useState(false);
 
@@ -82,6 +92,8 @@ export function useTransport(
   const held = useRef<'left' | 'right' | undefined>(undefined);
   /** Single source of truth for "a hold is in progress"; never infer it from playbackRate. */
   const holding = useRef(false);
+  const boostRef = useRef<number | undefined>(undefined);
+  const preferredHold = useRef<number>(DEFAULT_HOLD_RATE);
   const volumeRef = useRef(1);
   const mutedRef = useRef(false);
   mutedRef.current = muted;
@@ -89,7 +101,7 @@ export function useTransport(
   const setRate = useCallback((next: number) => {
     rateRef.current = next;
     setRateState(next);
-    if (audio.current) audio.current.playbackRate = next;
+    if (audio.current) audio.current.playbackRate = boostRef.current ?? next;
   }, [audio]);
 
   const cycleRate = useCallback(() => setRate(nextRate(rateRef.current)), [setRate]);
@@ -113,7 +125,7 @@ export function useTransport(
   const apply = useCallback(() => {
     const el = audio.current;
     if (!el) return;
-    el.playbackRate = rateRef.current;
+    el.playbackRate = boostRef.current ?? rateRef.current;
     el.volume = volumeRef.current;
     el.muted = mutedRef.current;
   }, [audio]);
@@ -130,6 +142,12 @@ export function useTransport(
     if (el.paused) void el.play(); else el.pause();
   }, [audio]);
 
+  const setBoost = useCallback((next: number | undefined) => {
+    boostRef.current = next;
+    setBoostState(next);
+    if (audio.current) audio.current.playbackRate = next ?? rateRef.current;
+  }, [audio]);
+
   const endHold = useCallback(() => {
     clearTimeout(holdTimer.current);
     clearInterval(rewindTimer.current);
@@ -137,9 +155,9 @@ export function useTransport(
     rewindTimer.current = undefined;
     holding.current = false;
     held.current = undefined;
-    if (audio.current) audio.current.playbackRate = rateRef.current;
+    setBoost(undefined);
     setBoosting(false);
-  }, [audio]);
+  }, [setBoost]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -156,6 +174,15 @@ export function useTransport(
       if (e.key === 'f' || e.key === 'F') { e.preventDefault(); onFullscreen?.(); return; }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
+        if (boostRef.current !== undefined) {
+          // The wheel is drawn slowest on top, so ↓ is faster. Not the app's station step either.
+          e.stopImmediatePropagation();
+          if (e.repeat) return;
+          const next = stepHoldRate(boostRef.current, e.key === 'ArrowDown' ? 1 : -1);
+          preferredHold.current = next;
+          setBoost(next);
+          return;
+        }
         setVolume(volumeRef.current + (e.key === 'ArrowUp' ? VOLUME_STEP : -VOLUME_STEP));
         return;
       }
@@ -172,9 +199,7 @@ export function useTransport(
         holding.current = true;
         setBoosting(true);
         if (dir === 'right') {
-          if (audio.current) {
-            audio.current.playbackRate = boostedRate(rateRef.current);
-          }
+          setBoost(holdRate(rateRef.current, preferredHold.current));
         } else {
           rewindTimer.current = setInterval(
             () => seek(-REWIND_STEP_S * rateRef.current),
@@ -196,20 +221,21 @@ export function useTransport(
       }
     };
 
-    window.addEventListener('keydown', onDown);
+    // Capture, so a held → can keep ↑ / ↓ from reaching the app's own listener
+    window.addEventListener('keydown', onDown, true);
     window.addEventListener('keyup', onUp);
     // A hold that survives a blur would never end
     window.addEventListener('blur', endHold);
     return () => {
-      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('blur', endHold);
       endHold();
     };
-  }, [enabled, seek, toggle, endHold, audio, setVolume, toggleMute, onFullscreen]);
+  }, [enabled, seek, toggle, endHold, setBoost, setVolume, toggleMute, onFullscreen]);
 
   return {
-    rate, boosting, volume, muted,
+    rate, boosting, boost, volume, muted,
     setRate, cycleRate, toggle, seek, setVolume, toggleMute, apply,
   };
 }

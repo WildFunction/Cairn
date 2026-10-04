@@ -510,6 +510,46 @@ body {
 .rate-item:hover { background: #ffffff14; color: var(--stage-accent); }
 .rate-item.on { color: var(--stage-accent); font-weight: 700; background: #f0a44f1f; }
 
+/* ---- the badge a held → raises ---- */
+/* The badge is a little over two wheel rows tall, so the tier above and the
+   tier below show most of a glyph each before its edge cuts them. */
+.stage-boost {
+  --row: 1.25em;
+  position: absolute; top: 3.2cqw; left: 50%; z-index: 8;
+  display: flex; align-items: center; gap: .7em;
+  height: calc(var(--row) * 2 + .3em); padding: 0 .95em; overflow: hidden;
+  background: #1c1a17e0; border-radius: 7px; color: #f1ede5;
+  font-size: clamp(11px, 1.6cqw, 13.5px); font-weight: 560; white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: boost-in .16s var(--ctl-ease) both;
+}
+@keyframes boost-in { from { opacity: 0; transform: translateX(-50%) translateY(-6px); } }
+.stage-boost-marks { display: inline-flex; gap: .1em; }
+.stage-boost-marks i {
+  width: 0; height: 0;
+  border-left: .5em solid currentColor; border-block: .36em solid transparent;
+  opacity: .3; animation: boost-run .9s linear infinite;
+}
+.stage-boost-marks i:nth-child(2) { animation-delay: .15s; }
+.stage-boost-marks i:nth-child(3) { animation-delay: .3s; }
+@keyframes boost-run { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+.stage-boost-wheel { height: var(--row); min-width: 2.3em; }
+.stage-boost-rates {
+  display: flex; flex-direction: column;
+  transform: translateY(calc(var(--at) * -1 * var(--row)));
+  transition: transform .2s var(--ctl-ease);
+}
+.stage-boost-rates > span {
+  height: var(--row); line-height: var(--row);
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  opacity: .4; transition: opacity .2s var(--ctl-ease);
+}
+.stage-boost-rates > .on { opacity: 1; }
+@media (prefers-reduced-transparency: reduce) {
+  .stage-boost { background: #1c1a17; }
+}
+
 /* ---- fullscreen: the wrapper goes full, the frame keeps its 16:9 inside ---- */
 .slide-stage-fit:fullscreen { background: #000; padding: 0; }
 .slide-stage-fit:fullscreen .slide-stage { border-radius: 0; box-shadow: none; }
@@ -527,7 +567,9 @@ body {
     transition-duration: .12s;
     transition-delay: 0ms !important;
   }
-  .rate-menu { animation: none; }
+  .rate-menu, .stage-boost, .stage-boost-marks i { animation: none; }
+  .stage-boost-marks i { opacity: 1; }
+  .stage-boost-rates { transition: none; }
 }
 
 /* ---- right ---- */

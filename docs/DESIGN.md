@@ -285,6 +285,17 @@ That last row is the point. The idle line and the scrub are one object, not a li
 out and a bar that fades in. Hovering it scales **the rail only** to 1.9 and grows the thumb from
 0 — scaling anything that contains the thumb draws the round handle as an ellipse.
 
+### Holding → to go faster
+
+A hold raises a badge at the top of the frame: three marks running left to right, the label, and
+the speed. The three tiers (1.5×, 2×, 3×) sit on a wheel with the current one centred and its
+neighbours cut by the badge's edge — that cut is the whole affordance for ↑ / ↓, and it is why
+the keys follow the drawing (↓ is the tier drawn below, the faster one) rather than "up is more".
+
+The badge shows whatever the chrome is doing, takes no clicks, and is gone on release. A hold
+starts on the tier used last, unless the dial is already that fast, in which case the next one up.
+Rewinding (a held ←) raises nothing: there is no speed to choose.
+
 ### Staying with the sound
 
 The picture is drawn **90ms ahead of the audio**, and that is deliberate.

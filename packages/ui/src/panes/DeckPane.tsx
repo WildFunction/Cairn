@@ -5,6 +5,7 @@ import type { NodeDeck, PathNode } from '@cairn/core/types';
 import { useNarration } from '../audio/useNarration';
 import { SlideView } from '../slides/SlideView';
 import { lastIndexAtOrBefore, LEAD_MS } from '../slides/reveal';
+import { BoostBadge } from './BoostBadge';
 import { FastMark, FullscreenMark, PauseMark, PlayMark, VolumeMark } from './icons';
 import { useUi } from '../settings/SettingsProvider';
 import { useAutoHide } from './useAutoHide';
@@ -244,6 +245,8 @@ export function DeckPane({
               <span className="stage-paused-disc"><PlayMark size={38} /></span>
             </div>
           )}
+
+          {transport.boost !== undefined && <BoostBadge rate={transport.boost} label={t.deck.boosting} />}
 
           <div className="stage-scrim" aria-hidden="true" />
 
