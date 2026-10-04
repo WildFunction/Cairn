@@ -38,4 +38,20 @@ export interface BookMeta {
   readonly rating?: number;
 }
 
+/** A book on the reader's WeChat Reading shelf. `cover` is a remote https URL. */
+export interface WereadShelfBook {
+  readonly bookId: string;
+  readonly title: string;
+  readonly author?: string;
+  readonly cover?: string;
+  /** The original thumbnail, for a book the CDN has no larger cover of. */
+  readonly coverFallback?: string;
+}
+
+/** Whether a key is in force, and whose account it came from when a QR login stored it. */
+export interface WereadStatus {
+  readonly connected: boolean;
+  readonly account?: string;
+}
+
 export type { DeckStatus, Progress } from '@cairn/core/books/progress';

@@ -178,13 +178,12 @@ function VoiceRow({ shell, locale }: { shell: ShellSettings; locale: Locale }): 
   );
 }
 
-type KeyedService = 'brave' | 'firecrawl' | 'tavily' | 'weread';
+type KeyedService = 'brave' | 'firecrawl' | 'tavily';
 
 const SEARCH_KEY_URL: Readonly<Record<KeyedService, string>> = {
   brave: 'https://api-dashboard.search.brave.com/app/keys',
   firecrawl: 'https://www.firecrawl.dev/app/api-keys',
   tavily: 'https://app.tavily.com/home',
-  weread: 'https://weread.qq.com/r/weread-skills',
 };
 
 export function SearchPage({ shell }: { shell?: ShellSettings }): ReactElement {
@@ -225,18 +224,6 @@ export function SearchPage({ shell }: { shell?: ShellSettings }): ReactElement {
         label={t.settings.search.tavily}
         hint={t.settings.search.tavilyHint}
       />
-    </Section>
-  );
-}
-
-export function WereadPage({ shell }: { shell?: ShellSettings }): ReactElement {
-  const { t } = useUi();
-
-  if (!shell) return <Offline title={t.settings.pages.weread} />;
-
-  return (
-    <Section title={t.settings.pages.weread}>
-      <SearchKeyRow shell={shell} which="weread" label={t.settings.weread.key} hint={t.settings.weread.keyHint} />
     </Section>
   );
 }

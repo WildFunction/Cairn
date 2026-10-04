@@ -67,6 +67,10 @@ export interface LibraryEntry {
   readonly voice?: string;
   /** Recorded so a half-built path of notes resumes speaking of notes. Absent means a book. */
   readonly kind?: SourceKind;
+  /** The file's own cover, relative to the library root, as everything here must be. */
+  readonly cover?: string;
+  /** The file's own blurb. */
+  readonly intro?: string;
 }
 
 export const LIBRARY_INDEX = 'books.json';

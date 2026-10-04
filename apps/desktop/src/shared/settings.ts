@@ -143,6 +143,8 @@ export interface ShellSettingsValues {
   readonly firecrawlKey: string;
   readonly tavilyKey: string;
   readonly wereadKey: string;
+  /** Whose WeChat Reading account the key came from, when a QR login stored it. Display only. */
+  readonly wereadAccount: string;
   readonly trace: boolean;
 }
 
@@ -162,6 +164,7 @@ export const DEFAULT_SHELL_SETTINGS: ShellSettingsValues = {
   firecrawlKey: envRef(KEY_ENV.firecrawlKey),
   tavilyKey: envRef(KEY_ENV.tavilyKey),
   wereadKey: envRef(KEY_ENV.wereadKey),
+  wereadAccount: '',
   trace: false,
 };
 
@@ -290,6 +293,7 @@ export function parseSettings(
     firecrawlKey: str(raw.firecrawlKey, fallback.firecrawlKey),
     tavilyKey: str(raw.tavilyKey, fallback.tavilyKey),
     wereadKey: str(raw.wereadKey, fallback.wereadKey),
+    wereadAccount: str(raw.wereadAccount, fallback.wereadAccount),
     trace: typeof raw.trace === 'boolean' ? raw.trace : fallback.trace,
   };
 }

@@ -42,7 +42,7 @@ answer pane rather than faking a reply.
 | `BRAVE_SEARCH_API_KEY` | Optional Brave Search key; required when Brave is selected |
 | `FIRECRAWL_API_KEY` | Optional Firecrawl key; without it, search uses Firecrawl's limited anonymous tier |
 | `TAVILY_API_KEY` | Optional Tavily search key. Read in the main process only |
-| `WEREAD_API_KEY` | Optional WeChat Reading key: popular highlights while a book builds, shelf covers, and a first station taken from the reader's WeChat Reading progress. Main process only |
+| `WEREAD_API_KEY` | Optional WeChat Reading key: popular highlights while a book builds, shelf covers, the reader's WeChat Reading shelf on the home screen, and a first station taken from their progress. The settings panel gets one by QR sign-in instead; this stays for a machine configured the old way. Main process only |
 
 **The settings panel writes `settings.json` beside the library**, and both sources are honoured.
 The search-provider picker defaults to keyless Firecrawl. Existing Tavily keys keep Tavily selected
@@ -301,6 +301,12 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
   `i.weread.qq.com` to match the book; its id then fetches highlights, progress and chapter
   titles. Chapter text never goes. What comes back is kept in `books/<id>/weread.json` and
   `cover.*`; without a key nothing is sent. Every call degrades to nothing on failure.
+- **QR sign-in goes through the WeChat Reading website, not the official skill.**
+  `main/weread/login.ts` follows the site's own login (`/api/auth/*`) to read the account's key
+  from `/api/skills/apikeyGet`, asking to create one only when none exists. The key and the
+  account's display name are kept in `settings.json`; the web session — cookies, access and
+  refresh tokens — is held in memory for one login and dropped. Nothing here may use that session
+  to read a book's text: that is the reverse-engineered reader, and it is DRM removal by another name.
 - **The loopback server is scoped, not open.** `main/library-server.ts` binds `127.0.0.1` on a random
   port (because `<audio>` needs a range-requestable URL), answers GET and HEAD only, serves one
   directory, and requires a per-launch token as the first path segment. Traversal is rejected

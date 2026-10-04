@@ -157,7 +157,9 @@ body {
 .shell.empty .deck-empty { display: flex; flex-direction: column; gap: 16px; align-items: center; }
 
 /* ---- home / shelf ---- */
-.home { width: 560px; max-width: 92vw; display: flex; flex-direction: column; gap: 26px; }
+.home { width: 960px; max-width: 92vw; display: flex; flex-direction: column; gap: 26px; margin: auto; padding: 48px 0; }
+/* The home grows with the shelf, so it scrolls rather than centring into clipped space. */
+.shell.empty:has(.home) { overflow-y: auto; }
 .home-head h1 { font-size: calc(22px * var(--text-scale, 1)); font-weight: 700; }
 .home-head p { font-size: calc(13.5px * var(--text-scale, 1)); color: var(--dim); margin-top: 6px; line-height: 1.7; }
 
@@ -176,46 +178,60 @@ body {
 .shelf { display: flex; flex-direction: column; gap: 12px; }
 /* Above the 14px card names, so the heading leads its cards instead of captioning them. */
 .shelf-title { font-size: calc(16px * var(--text-scale, 1)); letter-spacing: -.011em; color: var(--ink); font-weight: 640; }
+.shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+
+/* Cover left, words right, one fixed height: a grid of ragged cards reads as a list that lost its line breaks. */
+.shelf-card { position: relative; height: 156px; }
 .shelf-item {
-  font: inherit; text-align: left; cursor: pointer; padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 4px;
+  font: inherit; text-align: left; cursor: pointer; width: 100%; height: 100%; padding: 0;
+  display: flex; align-items: stretch; overflow: hidden;
   border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink);
 }
 .shelf-item:hover { border-color: var(--accent); }
-.shelf-name { font-size: calc(14px * var(--text-scale, 1)); font-weight: 600; }
-.shelf-meta { font-size: calc(12px * var(--text-scale, 1)); color: var(--dim); }
-.shelf-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.shelf-item:has(.shelf-cover) { flex-direction: row; align-items: center; gap: 12px; }
+.shelf-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .shelf-cover {
-  flex: 0 0 auto; width: 40px; height: 58px; object-fit: cover;
-  border-radius: 3px; border: 1px solid var(--line);
+  flex: 0 0 auto; height: 100%; aspect-ratio: 11 / 15; object-fit: cover;
+  border-right: 1px solid var(--line); background: var(--soft);
 }
-.shelf-intro {
+/* No cover: the title on a plain board, with a spine so it still reads as a book. */
+.shelf-cover.blank {
+  display: flex; align-items: center; justify-content: center; padding: 10px 8px 10px 14px;
+  border-left: 4px solid var(--accent); color: var(--ink);
+  font-size: calc(11.5px * var(--text-scale, 1)); font-weight: 600; line-height: 1.4; text-align: center;
+}
+.shelf-cover.blank span {
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;
+}
+.shelf-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; }
+.shelf-name {
+  font-size: calc(14px * var(--text-scale, 1)); font-weight: 600; padding-right: 26px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shelf-meta {
   font-size: calc(12px * var(--text-scale, 1)); color: var(--dim); line-height: 1.6;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-
-/* The row owns the border so the delete control sits inside it, not beside it. */
-.shelf-row { position: relative; display: flex; align-items: stretch; gap: 8px; }
-.shelf-row .shelf-item { flex: 1; min-width: 0; }
-.shelf-row .shelf-name, .shelf-row .shelf-meta {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.shelf-intro {
+  font-size: calc(12px * var(--text-scale, 1)); color: var(--dim); line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
-/* Quiet until the row is under the pointer: a delete button competing with the
+
+/* Quiet until the card is under the pointer: a delete button competing with the
    book's own name is a delete button that gets pressed by accident. */
 .shelf-del {
-  flex: 0 0 auto; align-self: center; display: grid; place-items: center;
-  width: 32px; height: 32px; padding: 0; cursor: pointer;
-  border: 1px solid transparent; border-radius: 8px;
-  background: none; color: var(--dim);
+  position: absolute; top: 6px; right: 6px; display: grid; place-items: center;
+  width: 28px; height: 28px; padding: 0; cursor: pointer;
+  border: 1px solid transparent; border-radius: 7px;
+  background: var(--card); color: var(--dim);
   opacity: 0; transition: opacity .15s ease, color .15s ease, background-color .15s ease;
 }
-.shelf-row:hover .shelf-del, .shelf-del:focus-visible { opacity: 1; }
-.shelf-del:hover { color: var(--ink); background: #8080801a; }
+.shelf-card:hover .shelf-del, .shelf-del:focus-visible { opacity: 1; }
+.shelf-del:hover { color: var(--ink); background: var(--soft); }
 
 .shelf-confirm {
-  flex: 0 0 auto; align-self: center; display: flex; align-items: center; gap: 8px;
-  padding-right: 2px;
+  position: absolute; left: 1px; right: 1px; bottom: 1px; display: flex; align-items: center; gap: 8px;
+  justify-content: flex-end; flex-wrap: wrap; padding: 8px 10px;
+  border-radius: 0 0 7px 7px; background: var(--card); border-top: 1px solid var(--line);
 }
 .shelf-ask { font-size: calc(11.5px * var(--text-scale, 1)); color: var(--dim); }
 /* The reason, not the word "failed": a delete that failed silently is a delete
@@ -783,6 +799,13 @@ body {
 
 .set-voice { display: inline-flex; align-items: center; gap: 7px; }
 .set-voice .set-select { max-width: 190px; }
+/* ---- WeChat Reading sign-in ---- */
+.set-weread { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.set-weread .set-hint { margin-top: 0; }
+.set-weread.stacked { flex-direction: column; align-items: flex-start; }
+.set-qr { width: 168px; height: 168px; border-radius: 8px; border: 1px solid var(--line); }
+.set-input.set-otp { width: 5.5em; padding: 7px 10px; letter-spacing: .3em; text-align: center; }
+
 .set-confirm { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
 .set-confirm .set-hint { margin-top: 0; }
 

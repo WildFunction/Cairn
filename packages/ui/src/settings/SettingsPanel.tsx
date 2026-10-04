@@ -3,8 +3,9 @@ import type { ReactElement } from 'react';
 import { useUi } from './SettingsProvider';
 import { ModelsPage } from './ModelsPage';
 import {
-  AppearancePage, DataPage, GeneralPage, NarrationPage, PlaybackPage, SearchPage, WereadPage,
+  AppearancePage, DataPage, GeneralPage, NarrationPage, PlaybackPage, SearchPage,
 } from './pages';
+import { WereadPage } from './WereadPage';
 import type { ShellSettings } from './shell';
 import {
   BookMark, CacheMark, GearMark, ModelMark, PaletteMark, PlaybackMark, SearchMark, WaveMark,

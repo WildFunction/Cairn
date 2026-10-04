@@ -31,7 +31,18 @@ export interface ParsedBook {
    * `parse/language.ts` — never inferred from the reader's interface language.
    */
   readonly language: ContentLocale;
+  /** The file's own cover, when it declares one. */
+  readonly cover?: BookCover;
+  /** The file's own blurb, as plain text. */
+  readonly description?: string;
 }
+
+export interface BookCover {
+  readonly data: Uint8Array;
+  readonly mediaType: CoverType;
+}
+
+export type CoverType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 
 /** Map-stage output: one chapter compressed. Every downstream stage reads this, never the raw text. */
 export interface ChapterNote {

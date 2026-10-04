@@ -15,6 +15,7 @@ export {
 export {
   type ModelStatus, type NarrationLanguage, type ProviderInfo, type ProviderModelInfo,
   type ProviderProfile, type ShellPrefs, type ShellSettings, type VoiceOption,
+  type WereadAccount, type WereadAccountState, type WereadLoginFailure,
 } from './settings/shell';
 export { Link, LinkProvider, type OpenLink } from './Link';
 export { SlideView, type SlideChrome } from './slides/SlideView';

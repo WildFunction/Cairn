@@ -14,6 +14,7 @@ import { installMenu, OPEN_SETTINGS, OPEN_INSPECTOR } from './menu';
 import { providerFor } from './provider';
 import { effectiveWereadKey, readSettings, writeSettings } from './settings';
 import { createWeread } from './weread/service';
+import { createWereadLogin } from './weread/login';
 import { library } from './store';
 import { voiceFor, type UiLocale } from '../shared/settings';
 import type { CairnRPC } from '../shared/schema';
@@ -59,9 +60,14 @@ const weread = createWeread({
   keyOf: async () => effectiveWereadKey(await readSettings()),
 });
 
+const wereadLogin = createWereadLogin({
+  save: async (key, account) => { await writeSettings({ wereadKey: key, wereadAccount: account }); },
+});
+
 const handlers = createHandlers({
   books,
   weread,
+  wereadLogin,
   devBuild,
   menu,
   emit: {

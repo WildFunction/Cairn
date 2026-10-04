@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { ChapterNote, PathNode } from '@cairn/core/types';
 import {
-  chapterTitleOf, pickHit, positionOf, quotesOf, searchHits, stationFor,
+  chapterTitleOf, largerCover, pickHit, positionOf, quotesOf, searchHits, stationFor,
 } from '../../../src/main/weread/match';
 
 const hit = (bookId: string, title: string, author?: string) =>
@@ -58,4 +58,12 @@ describe('stationFor', () => {
   test('a title this book does not have is no station', () => {
     expect(stationFor(nodes, notes, '版权信息')).toBeUndefined();
   });
+});
+
+test('largerCover asks the CDN for the 428×616 cover in place of any smaller one', () => {
+  const at = (p: string): string => `https://cdn.weread.qq.com/weread/cover/66/YueWen_1/${p}YueWen_1.jpg`;
+  expect(largerCover(at('s_'))).toBe(at('t9_'));
+  expect(largerCover(at('t6_'))).toBe(at('t9_'));
+  expect(largerCover(at('t9_'))).toBeUndefined();
+  expect(largerCover('https://cdn.example/cover.jpg')).toBeUndefined();
 });

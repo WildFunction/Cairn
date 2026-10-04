@@ -7,11 +7,15 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
-import type { Chapter, ChapterNote, NodeDeck, Path } from '../types';
+import type { BookCover, Chapter, ChapterNote, CoverType, NodeDeck, Path } from '../types';
 import {
   audioFile, bookDir, bookFile, type DeckIndex, deckFile, deckIndexFile, isBookId,
   LIBRARY_INDEX, type LibraryEntry, normalizeEntry,
 } from './library';
+
+const COVER_EXT: Readonly<Record<CoverType, string>> = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+};
 
 export interface Library {
   readonly root: string;
@@ -23,6 +27,8 @@ export interface Library {
   installPath(
     path: Path, notes: readonly ChapterNote[], chapters: readonly Chapter[], entry: LibraryEntry,
   ): Promise<LibraryEntry>;
+  /** Writes the file's cover beside the book and returns its path relative to the root. */
+  installCover(bookId: string, cover: BookCover): Promise<string>;
   /** One station becomes playable: its deck and its audio, together. */
   installDeck(bookId: string, deck: NodeDeck, audioDir: string): Promise<void>;
   writeDeckIndex(bookId: string, index: DeckIndex): Promise<void>;
@@ -141,6 +147,13 @@ export function openLibrary(root: string): Library {
 
       forget(path.bookId);
       return upsert(entry);
+    },
+
+    async installCover(bookId, cover) {
+      const relative = bookFile(bookId, `cover.${COVER_EXT[cover.mediaType]}`);
+      await mkdir(dirOf(bookId), { recursive: true });
+      await writeFile(at(relative), cover.data);
+      return relative;
     },
 
     async installDeck(bookId, deck, audioDir) {

@@ -1,8 +1,8 @@
 import JSZip from 'jszip';
-import { type Chapter, type ParsedBook, ParseError } from '../types';
+import { type BookCover, type Chapter, type CoverType, type ParsedBook, ParseError } from '../types';
 import { type Block, chunkBlocks } from './chunk';
 import { nameUntitled, splitByHeading } from './html-blocks';
-import { decodeEntities } from './text';
+import { decodeEntities, htmlToText } from './text';
 import { detectContentLocale } from './language';
 
 const CONTAINER_PATH = 'META-INF/container.xml';
@@ -26,6 +26,8 @@ export async function parseEpub(bytes: Uint8Array, fileName: string): Promise<Pa
 
   const sample = chapters.slice(0, 3).map((c) => c.text).join('\n').slice(0, 4000);
   const language = detectContentLocale(pickMeta(opfXml, 'language'), sample);
+  const cover = await readCover(zip, opfXml, baseDir);
+  const description = describe(opfXml);
 
   return {
     title: pickMeta(opfXml, 'title') ?? stripExtension(fileName),
@@ -35,6 +37,8 @@ export async function parseEpub(bytes: Uint8Array, fileName: string): Promise<Pa
     totalWords: chapters.reduce((sum, c) => sum + c.wordCount, 0),
     // The manifest's claim, checked against the text — see parse/language.ts
     language,
+    ...(cover ? { cover } : {}),
+    ...(description ? { description } : {}),
   };
 }
 
@@ -133,6 +137,49 @@ function resolvePath(baseDir: string, href: string): string {
     else if (part !== '.' && part !== '') segments.push(part);
   }
   return segments.join('/');
+}
+
+const COVER_TYPES: ReadonlySet<string> = new Set<CoverType>(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+/** A cover bigger than this is a scan of the whole jacket, not something a shelf card needs. */
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+
+interface ImageItem {
+  readonly id: string;
+  readonly href: string;
+  readonly mediaType: CoverType;
+  readonly properties: string;
+}
+
+function imageItems(opfXml: string): readonly ImageItem[] {
+  return [...opfXml.matchAll(/<item\b[^>]*>/gi)].flatMap((m) => {
+    const id = attr(m[0], 'id');
+    const href = attr(m[0], 'href');
+    const mediaType = attr(m[0], 'media-type')?.toLowerCase() ?? '';
+    if (!id || !href || !COVER_TYPES.has(mediaType)) return [];
+    return [{ id, href: decodeEntities(href), mediaType: mediaType as CoverType, properties: attr(m[0], 'properties') ?? '' }];
+  });
+}
+
+/** EPUB 3 marks the cover; EPUB 2 names it in a meta; older files only name the file. */
+async function readCover(zip: JSZip, opfXml: string, baseDir: string): Promise<BookCover | undefined> {
+  const images = imageItems(opfXml);
+  const named = [...opfXml.matchAll(/<meta\b[^>]*>/gi)]
+    .find((m) => attr(m[0], 'name')?.toLowerCase() === 'cover')?.[0];
+  const namedId = named ? attr(named, 'content') : undefined;
+  const item = images.find((i) => /(^|\s)cover-image(\s|$)/.test(i.properties))
+    ?? images.find((i) => i.id === namedId)
+    ?? images.find((i) => /cover/i.test(i.id) || /cover/i.test(i.href.split('/').pop() ?? ''));
+  const file = item ? locate(zip, baseDir, item.href) : null;
+  if (!item || !file) return undefined;
+  const data = await file.async('uint8array');
+  return data.byteLength > 0 && data.byteLength <= MAX_COVER_BYTES ? { data, mediaType: item.mediaType } : undefined;
+}
+
+/** Publishers write HTML into the description, usually escaped once more. */
+function describe(opfXml: string): string | undefined {
+  const raw = opfXml.match(/<dc:description[^>]*>([\s\S]*?)<\/dc:description>/i)?.[1];
+  const text = raw ? htmlToText(decodeEntities(raw)).replace(/\s+/g, ' ').trim() : '';
+  return text.length > 0 ? text : undefined;
 }
 
 function pickMeta(opfXml: string, tag: 'title' | 'creator' | 'language'): string | undefined {

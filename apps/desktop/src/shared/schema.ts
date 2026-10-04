@@ -4,7 +4,10 @@ import type { LibraryEntry } from '@cairn/core/store/library';
 import type { ChatSession } from '@cairn/core/companion/types';
 import type { CompanionEvent } from './companion-events';
 import type { ContentLocale, ModelStatus, ShellSettingsValues, UiLocale } from './settings';
-import type { BookMeta, BookPreview, DeckStatus, Progress } from './types';
+import type {
+  BookMeta, BookPreview, DeckStatus, Progress, WereadShelfBook, WereadStatus,
+} from './types';
+import type { LoginStep } from './weread-login';
 
 /**
  * The bridge contract, shared by both sides so they cannot drift.
@@ -37,6 +40,15 @@ export type BunSchema = RPCSchema<{
     wereadQuotes: { params: { title: string; author?: string }; response: readonly string[] };
     bookMeta: { params: { bookId: string }; response: BookMeta | null };
     wereadStart: { params: { bookId: string }; response: string | null };
+    wereadShelf: { params: void; response: readonly WereadShelfBook[] };
+    wereadIntro: { params: { wereadId: string }; response: string | null };
+    wereadStatus: { params: void; response: WereadStatus };
+    /** QR sign-in: `url` is what the code encodes. A poll waits up to ~25 s for the phone. */
+    wereadLoginStart: { params: void; response: { id: string; url: string } };
+    wereadLoginPoll: { params: { id: string; otp?: string }; response: LoginStep };
+    wereadLoginCancel: { params: { id: string }; response: null };
+    /** Forgets the key and the account name, including a `$WEREAD_API_KEY` reference. */
+    wereadSignOut: { params: void; response: null };
     /** Remove a book, its decks, its audio and its cache. Irreversible. */
     deleteBook: { params: { bookId: string }; response: boolean };
 
@@ -84,4 +96,4 @@ export type CairnRPC = { bun: BunSchema; webview: WebviewSchema };
 
 /** One request's params, for the places that name them outside a call. */
 export type RequestParams<K extends keyof BunSchema['requests']> = BunSchema['requests'][K]['params'];
-export type { BookMeta, BookPreview, DeckStatus, Progress };
+export type { BookMeta, BookPreview, DeckStatus, Progress, WereadShelfBook, WereadStatus };

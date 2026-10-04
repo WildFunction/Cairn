@@ -244,6 +244,7 @@ export function App(): ReactElement {
         <Home
           books={books}
           {...(base ? { base } : {})}
+          wereadConnected={shell?.weread.state.step === 'in'}
           onAdd={() => setAdding(true)}
           onOpen={openBook}
           onSettings={() => setSettingsOpen(true)}

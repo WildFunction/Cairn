@@ -74,7 +74,28 @@ export interface ShellPrefs {
   readonly firecrawlKey: string;
   readonly tavilyKey: string;
   readonly wereadKey: string;
+  readonly wereadAccount: string;
   readonly trace: boolean;
+}
+
+export type WereadLoginFailure = 'expired' | 'otp_expired' | 'no_skill' | 'rejected' | 'network';
+
+/** Where a WeChat Reading sign-in is. `out` carries why the last attempt stopped, if it did. */
+export type WereadAccountState =
+  | { readonly step: 'loading' }
+  | { readonly step: 'out'; readonly failed?: WereadLoginFailure }
+  | { readonly step: 'starting' }
+  | { readonly step: 'qr'; readonly url: string }
+  | { readonly step: 'otp'; readonly wrong: boolean; readonly busy: boolean }
+  | { readonly step: 'in'; readonly account?: string };
+
+export interface WereadAccount {
+  readonly state: WereadAccountState;
+  readonly signIn: () => void;
+  /** The four digits the phone showed. */
+  readonly submitOtp: (code: string) => void;
+  readonly cancel: () => void;
+  readonly signOut: () => void;
 }
 
 export interface VoiceOption {
@@ -106,4 +127,5 @@ export interface ShellSettings {
   readonly devBuild: boolean;
   readonly revealDataDir: () => void;
   readonly clearCache: () => Promise<void>;
+  readonly weread: WereadAccount;
 }

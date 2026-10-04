@@ -231,9 +231,12 @@ export function createBookBuilder(deps: BookBuilderDeps): BookBuilder {
         budgetMaxMinutes: budget.maxMinutes,
       };
 
+      const cover = book.cover ? await library.installCover(id, book.cover) : undefined;
       const entry = await library.installPath(path, notes, book.chapters, {
         id, title: book.title,
         ...(book.author ? { author: book.author } : {}),
+        ...(cover ? { cover } : {}),
+        ...(book.description ? { intro: book.description } : {}),
         stations: path.nodes.length,
         minutes: path.totalMinutes,
         budgetId, generatedAt: path.generatedAt,

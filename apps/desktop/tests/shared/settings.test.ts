@@ -30,6 +30,7 @@ describe('parseSettings', () => {
       firecrawlKey: 'fire-x',
       tavilyKey: 'tvly-x',
       wereadKey: 'wrk-x',
+      wereadAccount: '读者',
       trace: true,
     };
     expect(parseSettings(stored)).toEqual(stored);

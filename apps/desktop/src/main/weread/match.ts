@@ -6,6 +6,8 @@
  * and author because the reader's file carries no WeChat Reading id.
  */
 import type { ChapterNote, PathNode } from '@cairn/core/types';
+import type { WereadShelfBook } from '../../shared/types';
+import { normalize } from '../../shared/title';
 
 export interface SearchHit {
   readonly bookId: string;
@@ -33,10 +35,7 @@ const text = (value: unknown): string | undefined =>
 const num = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
-/** Punctuation, spacing and case differ between a file's metadata and the store's. */
-export function normalize(value: string): string {
-  return value.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
-}
+export { normalize };
 
 function overlaps(a: string, b: string): boolean {
   const [x, y] = [normalize(a), normalize(b)];
@@ -64,6 +63,38 @@ export function searchHits(raw: unknown): readonly SearchHit[] {
       ...(rating !== undefined && rating > 0 ? { rating } : {}),
     }];
   });
+}
+
+/** Ebooks only: albums are audio, and Cairn has nothing to make of one. */
+export function shelfBooks(raw: unknown): readonly WereadShelfBook[] {
+  return list(record(raw)?.books).flatMap((item) => {
+    const row = record(item);
+    const bookId = text(row?.bookId);
+    const title = text(row?.title);
+    if (!row || !bookId || !title) return [];
+    const author = text(row.author);
+    const cover = text(row.cover);
+    const safe = cover?.startsWith('https://') ? cover : undefined;
+    const larger = safe ? largerCover(safe) : undefined;
+    return [{
+      bookId, title,
+      ...(author ? { author } : {}),
+      ...(larger ? { cover: larger, coverFallback: safe } : safe ? { cover: safe } : {}),
+    }];
+  });
+}
+
+/**
+ * The same cover at 428×616. Search and the shelf hand out a 70×101 thumbnail
+ * (`s_`); the CDN serves each size under its own prefix.
+ */
+export function largerCover(url: string): string | undefined {
+  const larger = url.replace(/\/(?:s|t\d)_([^/]+)$/, '/t9_$1');
+  return larger === url ? undefined : larger;
+}
+
+export function introOf(raw: unknown): string | undefined {
+  return text(record(raw)?.intro);
 }
 
 /**

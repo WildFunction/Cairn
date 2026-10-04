@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BookBuilder, bookIdFor, createBookBuilder } from '../../src/books/builder';
@@ -127,6 +127,25 @@ describe('generate', () => {
     expect(requests.length).toBeGreaterThan(0);
     expect(requests.every((r) => r.system?.includes(NOTES_MARK))).toBe(true);
     expect((await library.loadPath(entry.id)).stages.at(-1)?.title).toBe('回头看');
+  });
+
+  test('the file\'s cover is written beside the book and both it and the blurb are on the shelf entry', async () => {
+    const data = new Uint8Array([0xff, 0xd8, 0xff, 1]);
+    const { entry, settled } = await builder.generate(
+      { ...book, cover: { data, mediaType: 'image/jpeg' }, description: '一本书。' }, '/books/a.epub', 'brief',
+    );
+    await settled;
+    expect(entry.cover).toBe(`books/${entry.id}/cover.jpg`);
+    expect(entry.intro).toBe('一本书。');
+    expect(new Uint8Array(await readFile(join(library.root, entry.cover ?? "")))).toEqual(data);
+    expect((await library.list()).find((b) => b.id === entry.id)?.cover).toBe(entry.cover);
+  });
+
+  test('a book with neither records neither', async () => {
+    const { entry, settled } = await builder.generate(book, '/books/a.txt', 'brief');
+    await settled;
+    expect(entry.cover).toBeUndefined();
+    expect(entry.intro).toBeUndefined();
   });
 
   test('a book is not told it is notes', async () => {

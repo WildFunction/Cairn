@@ -11,6 +11,7 @@ import {
 } from './shared/settings';
 import { OFFERED_PROVIDERS } from './shared/providers';
 import { silentWav } from './silence';
+import { useWereadAccount } from './useWereadAccount';
 
 const SILENCE = silentWav();
 
@@ -156,6 +157,12 @@ export function useShellSettings(): ShellSettings | undefined {
     void modelStatus().then(setModel);
   }, []);
 
+  // Signing in or out rewrites the key on disk; the panel's copy has to follow
+  const reread = useCallback(() => {
+    void getSettings().then((stored) => stored && setValues(stored));
+  }, []);
+  const weread = useWereadAccount(reread);
+
   return useMemo(() => {
     if (!inShell || !values) return undefined;
     return {
@@ -172,6 +179,7 @@ export function useShellSettings(): ShellSettings | undefined {
       devBuild: dev,
       revealDataDir: () => void revealDataDir(),
       clearCache,
+      weread,
     } satisfies ShellSettings;
-  }, [values, setPref, setProvider, voicesFor, recheckModel, model, audition, previewing, dir, dev]);
+  }, [values, setPref, setProvider, voicesFor, recheckModel, model, audition, previewing, dir, dev, weread]);
 }

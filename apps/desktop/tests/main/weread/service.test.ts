@@ -46,6 +46,12 @@ function fakeGateway(progress = 40) {
       }] }] });
       case '/book/bestbookmarks': return reply({ items: [{ markText: 'Commit early.' }] });
       case '/book/getprogress': return reply({ book: { chapterUid: 22, progress } });
+      case '/shelf/sync': return reply({ books: [
+        { bookId: 'w9', title: '置身事内', author: '兰小欢', cover: 'https://cdn.example/s.jpg' },
+        { bookId: 'w8', title: 'Plain', cover: 'http://insecure.example/c.jpg' },
+        { title: 'no id' },
+      ], albums: [{ albumInfo: { albumId: 'a1', name: 'An album' } }] });
+      case '/book/info': return reply({ bookId: 'w9', intro: '政府与经济发展。' });
       case '/book/chapterinfo': return reply({ chapters: [{ chapterUid: 22, title: 'Git Branching' }] });
       default: return reply({ errcode: -1 });
     }
@@ -86,5 +92,66 @@ test('a finished or unstarted book has no starting station', async () => {
     const { fetcher } = fakeGateway(progress);
     const weread = createWeread({ library, keyOf: async () => 'wrk-test', fetcher });
     expect(await weread.startStation(path.bookId)).toBeNull();
+  }
+});
+
+test('the shelf is ebooks only, with https covers, and is asked once in a while rather than every visit', async () => {
+  const { fetcher, asked } = fakeGateway();
+  const weread = createWeread({ library, keyOf: async () => 'wrk-test', fetcher });
+  const expected = [
+    { bookId: 'w9', title: '置身事内', author: '兰小欢', cover: 'https://cdn.example/s.jpg' },
+    { bookId: 'w8', title: 'Plain' },
+  ];
+  expect(await weread.shelf()).toEqual(expected);
+  expect(await weread.shelf()).toEqual(expected);
+  expect(asked).toEqual(['/shelf/sync']);
+});
+
+test('an intro is fetched once per book, and an id that is not one is never sent', async () => {
+  const { fetcher, asked } = fakeGateway();
+  const weread = createWeread({ library, keyOf: async () => 'wrk-test', fetcher });
+  expect(await weread.intro('w9')).toBe('政府与经济发展。');
+  expect(await weread.intro('w9')).toBe('政府与经济发展。');
+  expect(await weread.intro('../x')).toBeNull();
+  expect(asked).toEqual(['/book/info']);
+});
+
+test('no key, no shelf', async () => {
+  const { fetcher, asked } = fakeGateway();
+  const weread = createWeread({ library, keyOf: async () => undefined, fetcher });
+  expect(await weread.shelf()).toEqual([]);
+  expect(await weread.intro('w9')).toBeNull();
+  expect(asked).toEqual([]);
+});
+
+test('a book with its own cover keeps it: a match brings the intro, not a second cover over the first', async () => {
+  const own = { ...path, bookId: 'pro-git-own000' };
+  const cover = await library.installCover(own.bookId, { data: new Uint8Array([9, 9]), mediaType: 'image/jpeg' });
+  await library.installPath(own, [], [], {
+    id: own.bookId, title: 'Pro Git', author: 'Scott Chacon', stations: 2, minutes: 4,
+    budgetId: 'brief', generatedAt: own.generatedAt, cover,
+  });
+  const { fetcher, asked } = fakeGateway();
+  const weread = createWeread({ library, keyOf: async () => 'wrk-test', fetcher });
+  expect(await weread.meta(own.bookId)).toEqual({ intro: 'Git, all of it.', rating: 91 });
+  expect([...await readFile(join(dir, cover))]).toEqual([9, 9]);
+  expect(asked).toEqual(['/store/search']);
+});
+
+test('a saved WeChat Reading cover is the large one when the CDN has it, the thumbnail when not', async () => {
+  for (const [large, expected] of [[true, [7, 7, 7]], [false, [1]]] as const) {
+    const book = { ...path, bookId: large ? 'big-cover0001' : 'small-cover001' };
+    await library.installPath(book, [], [], {
+      id: book.bookId, title: '置身事内', stations: 2, minutes: 4, budgetId: 'brief', generatedAt: book.generatedAt,
+    });
+    const fetcher = (async (url: string | URL | Request) => {
+      const at = String(url);
+      if (at.endsWith('/t9_w9.jpg')) return large ? new Response(new Uint8Array([7, 7, 7]), { headers: { 'content-type': 'image/jpeg' } }) : new Response('', { status: 404 });
+      if (at.endsWith('/s_w9.jpg')) return new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/jpeg' } });
+      return new Response(JSON.stringify({ results: [{ books: [{ bookInfo: { bookId: 'w9', title: '置身事内', cover: 'https://cdn.example/w9/s_w9.jpg' } }] }] }));
+    }) as typeof fetch;
+    const weread = createWeread({ library, keyOf: async () => 'wrk-test', fetcher });
+    const meta = await weread.meta(book.bookId);
+    expect([...await readFile(join(dir, meta?.cover ?? ''))]).toEqual([...expected]);
   }
 });

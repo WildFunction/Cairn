@@ -8,7 +8,10 @@ import type {
   ContentLocale, ModelStatus, ShellSettingsValues, UiLocale,
 } from './shared/settings';
 import type { CairnRPC, RequestParams } from './shared/schema';
-import type { BookMeta, BookPreview, DeckStatus, Progress } from './shared/types';
+import type {
+  BookMeta, BookPreview, DeckStatus, Progress, WereadShelfBook, WereadStatus,
+} from './shared/types';
+import type { LoginStep } from './shared/weread-login';
 
 /**
  * Renderer side of the bridge.
@@ -33,6 +36,8 @@ const ANSWER_LIMIT: RequestOptions = { maxRequestTime: 5 * 60_000 };
 /** A poll that cannot answer within this is a poll worth dropping. */
 const POLL_LIMIT: RequestOptions = { maxRequestTime: 10_000 };
 const START_LIMIT: RequestOptions = { maxRequestTime: 4_000 };
+/** A sign-in poll holds open ~25 s for the phone, then may fetch the key: two more requests. */
+const LOGIN_LIMIT: RequestOptions = { maxRequestTime: 60_000 };
 
 /**
  * The shell injects `__electrobun` (with the underscores) before the page runs.
@@ -181,6 +186,42 @@ export async function bookMeta(bookId: string): Promise<BookMeta | null> {
 export async function wereadStart(bookId: string): Promise<string | null> {
   if (!inShell) return null;
   return (await connect()).request.wereadStart({ bookId }, START_LIMIT).catch(() => null);
+}
+
+export async function wereadShelf(): Promise<readonly WereadShelfBook[]> {
+  if (!inShell) return [];
+  return (await connect()).request.wereadShelf(undefined, POLL_LIMIT).catch(() => []);
+}
+
+export async function wereadIntro(wereadId: string): Promise<string | null> {
+  if (!inShell) return null;
+  return (await connect()).request.wereadIntro({ wereadId }, POLL_LIMIT).catch(() => null);
+}
+
+export async function wereadStatus(): Promise<WereadStatus> {
+  if (!inShell) return { connected: false };
+  return (await connect()).request.wereadStatus(undefined, POLL_LIMIT).catch(() => ({ connected: false }));
+}
+
+/** Signing in is something the reader asked for, so these failures are thrown, not swallowed. */
+export async function wereadLoginStart(): Promise<{ id: string; url: string }> {
+  if (!inShell) throw offline('offline_settings');
+  return (await connect()).request.wereadLoginStart(undefined, LOGIN_LIMIT).catch(rethrow);
+}
+
+export async function wereadLoginPoll(id: string, otp?: string): Promise<LoginStep> {
+  if (!inShell) throw offline('offline_settings');
+  return (await connect()).request.wereadLoginPoll({ id, ...(otp ? { otp } : {}) }, LOGIN_LIMIT).catch(rethrow);
+}
+
+export async function wereadLoginCancel(id: string): Promise<void> {
+  if (!inShell) return;
+  await (await connect()).request.wereadLoginCancel({ id }, POLL_LIMIT).catch(() => null);
+}
+
+export async function wereadSignOut(): Promise<void> {
+  if (!inShell) throw offline('offline_settings');
+  await (await connect()).request.wereadSignOut(undefined, POLL_LIMIT).catch(rethrow);
 }
 
 export async function markBookFinished(bookId: string, nodeId: string): Promise<boolean> {
