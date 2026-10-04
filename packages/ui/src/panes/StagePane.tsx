@@ -14,7 +14,7 @@ import { useT } from '../settings/SettingsProvider';
  * point of the thing.
  */
 export function StagePane({
-  path, decks, currentId, onPick, books = [], onSwitchBook, onAdd, onHome, onSettings,
+  path, decks, currentId, onPick, books = [], onSwitchBook, onAdd, onHome,
   failed, heat, complete = true, collapsed = false,
 }: {
   path: Path;
@@ -33,7 +33,6 @@ export function StagePane({
   onAdd?: () => void;
   /** Back to the shelf. */
   onHome?: () => void;
-  onSettings?: () => void;
   /** Collapsed panes keep their grid slot, or the columns would shift. */
   collapsed?: boolean;
 }): ReactElement {
@@ -57,7 +56,6 @@ export function StagePane({
             onSwitch={onSwitchBook}
             onAdd={onAdd}
             onHome={onHome}
-            onSettings={onSettings}
           />
         </div>
         <div className="stage-meta">

@@ -128,7 +128,6 @@ export const zh: Messages = {
   menu: {
     addBook: '添加一本书',
     backToShelf: '返回书架',
-    settings: '设置…',
   },
 
   panel: {

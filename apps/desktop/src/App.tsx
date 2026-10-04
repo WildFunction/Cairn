@@ -303,7 +303,6 @@ export function App(): ReactElement {
         onSwitchBook={(id) => { if (chat.pendingTurn) void chatCancel(chat.pendingTurn); openBook(id); setCurrentId(undefined); setChat(emptyCompanionView(id)); }}
         onAdd={inShell ? () => setAdding(true) : undefined}
         onHome={goHome}
-        onSettings={() => setSettingsOpen(true)}
         failed={bundle.failed}
         heat={heat}
         complete={bundle.complete}

@@ -138,7 +138,6 @@ export const en = {
   menu: {
     addBook: 'Add a book',
     backToShelf: 'Back to the shelf',
-    settings: 'Settings…',
   },
 
   panel: {

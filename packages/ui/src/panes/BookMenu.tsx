@@ -19,7 +19,7 @@ import { useT } from '../settings/SettingsProvider';
  * a custom menu feel worse than the select it replaced.
  */
 export function BookMenu({
-  title, books, currentId, onSwitch, onAdd, onHome, onSettings,
+  title, books, currentId, onSwitch, onAdd, onHome,
 }: {
   title: string;
   books: readonly LibraryEntry[];
@@ -29,8 +29,6 @@ export function BookMenu({
   onAdd?: () => void;
   /** Back to the shelf: the only route to the home screen once a book is open. */
   onHome?: () => void;
-  /** Settings, for when a book is open and the shelf's gear is out of reach. */
-  onSettings?: () => void;
 }): ReactElement {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -48,7 +46,6 @@ export function BookMenu({
   const rows: readonly (() => void)[] = [
     ...books.map((b) => () => choose(b.id)),
     ...(onAdd ? [() => run(onAdd)] : []),
-    ...(onSettings ? [() => run(onSettings)] : []),
     ...(onHome ? [() => run(onHome)] : []),
   ];
   const rowsRef = useRef(rows);
@@ -153,7 +150,7 @@ export function BookMenu({
           ))}
           </div>
 
-          {(onAdd || onSettings || onHome) && <div className="book-sep" />}
+          {(onAdd || onHome) && <div className="book-sep" />}
 
           {onAdd && (
             <button
@@ -170,20 +167,6 @@ export function BookMenu({
             </button>
           )}
 
-          {onSettings && (
-            <button
-              type="button"
-              role="menuitem"
-              className={rowClass('book-item action', books.length + (onAdd ? 1 : 0), active, false)}
-              onMouseEnter={() => setActive(books.length + (onAdd ? 1 : 0))}
-              onClick={() => run(onSettings)}
-            >
-              <span className="book-check" aria-hidden="true">⚙</span>
-              <span className="book-item-body">
-                <span className="book-item-name">{t.menu.settings}</span>
-              </span>
-            </button>
-          )}
 
           {onHome && (
             <button
