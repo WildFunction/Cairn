@@ -159,8 +159,9 @@ reported ready only after `onReady` has installed its deck and audio into the bo
 
 ## 6. Process boundary and the loopback server
 
-The main process serves the library over `127.0.0.1` on a random port, because `<audio>` needs a
-URL it can range-request. `main/library-server.ts`:
+The main process serves the library over `127.0.0.1` on a random port, because the webview needs
+a URL to read a book from: the deck fetches its narration whole, and the voice audition's
+`<audio>` range-requests its sample. `main/library-server.ts`:
 
 - binds loopback only, and answers `GET` and `HEAD` only
 - serves exactly one directory
@@ -327,6 +328,32 @@ The companion's tools still reach `store.ts` at import. That is the next step, n
 
 The bridge's request types now come from the schema through Electrobun's own proxy type; the
 hand-written copy and its `as unknown as` cast were the one place the contract could drift.
+
+### Narration plays through its own time-stretcher, not `<audio>`
+
+The deck used an `<audio>` element and set `playbackRate` on it. In WKWebView that is AVPlayer's
+`setRate:`, and every change stalls the playhead — measured in a bare WKWebView on a station's
+own mp3, 150–570ms of nothing per change (after 1x → 2x the first second covered 1.1s of
+narration instead of 2). Turning pitch correction off, serving from a blob and never landing on
+1x all stalled the same, so nothing on the element's surface avoids it. A held → changes rate
+twice, which made the gesture the worst case.
+
+Players that change speed cleanly keep the stretcher in the signal path at every rate, so a
+change is a parameter and not a rebuild: Chromium's renderer runs WSOLA behind `playbackRate`,
+Firefox runs SoundTouch, ExoPlayer runs Sonic. `packages/ui/src/audio/` does the same —
+`stretch.ts` is WSOLA with Chromium's figures, run in an AudioWorklet over the station's decoded
+samples, and `NarrationPlayer` gives it the slice of `HTMLMediaElement` the transport already
+spoke. The same measurement now reads ~20ms, which is the report interval. At 1x the stretcher
+passes the signal through untouched, so nothing is paid when nobody is changing speed.
+
+What it costs: a station is fetched and decoded whole before it plays (~300ms for 8.5 minutes),
+and held as 24kHz mono floats (~50MB at that length). The context runs at 24kHz because edge-tts
+narrates at 24kHz; anything else is resampled on decode.
+
+The worklet module is the two functions' own source, loaded from a Blob URL — the one form that
+is the same under Vite's dev server and `views://`. That is why `makeStretcher` and `register`
+may reference nothing outside themselves; `tests/audio/worklet.test.ts` evaluates the text with
+only the worklet's globals in reach, so a stray reference fails there.
 
 ### Superseded, and why it is worth knowing
 

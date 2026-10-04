@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactElement } from 'react';
 import { toCaptions } from '@cairn/core/pipeline/caption';
 import type { NodeDeck, PathNode } from '@cairn/core/types';
+import { useNarration } from '../audio/useNarration';
 import { SlideView } from '../slides/SlideView';
 import { lastIndexAtOrBefore, LEAD_MS } from '../slides/reveal';
 import { FastMark, FullscreenMark, PauseMark, PlayMark, VolumeMark } from './icons';
@@ -45,7 +46,6 @@ export function DeckPane({
   onProgress?: (ms: number) => void;
 }): ReactElement {
   const { prefs, t } = useUi();
-  const audio = useRef<HTMLAudioElement>(null);
   const fit = useRef<HTMLDivElement>(null);
   const [ms, setMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -53,6 +53,19 @@ export function DeckPane({
   const [full, setFull] = useState(false);
   const chrome = useAutoHide();
   const [retrying, setRetrying] = useState(false);
+
+  const audio = useNarration({
+    onPlay: () => setPlaying(true),
+    onPause: () => setPlaying(false),
+    onEnded,
+    onTime: (seconds) => {
+      const now = Math.round(seconds * 1000);
+      // Coarse, but the only ticker while paused or seeking; the frame loop
+      // below owns the position during playback.
+      if (!playing) setMs(now);
+      onProgress?.(now);
+    },
+  });
 
   // The frame goes fullscreen through its centring wrapper, so the stage keeps
   // its 16:9 and letterboxes instead of stretching to the display's shape.
@@ -80,32 +93,22 @@ export function DeckPane({
   // Restart from the top whenever the station changes — and only then
   useEffect(() => {
     const el = audio.current;
+    if (!el) return;
     // Wait for the deck: consuming the resume point before there is audio to
     // seek would spend it on nothing and start the station over.
-    if (!el || !deck) return;
+    if (!deck) { el.pause(); return; }
 
     const resumeMs = startAt(pending.current, node.id, deck.durationMs);
     pending.current = undefined;
     setMs(resumeMs);
 
-    if (resumeMs === 0) {
-      el.currentTime = 0;
-      void el.play().catch(() => setPlaying(false));
-      return;
-    }
+    // Resumed mid-station it opens paused — being dropped into the middle of a
+    // sentence is worse than pressing play.
+    void el.load(audioSrc, resumeMs / 1000, resumeMs === 0).catch(() => setPlaying(false));
+  }, [node.id, deck, audioSrc, audio]);
 
-    // Resumed mid-station: seek, and leave it paused — being dropped into the
-    // middle of a sentence is worse than pressing play. A seek before the
-    // metadata arrives is ignored by the element, so wait for it if it is early.
-    const seekThere = (): void => { el.currentTime = resumeMs / 1000; };
-    if (el.readyState >= 1) { seekThere(); return; }
-    el.addEventListener('loadedmetadata', seekThere, { once: true });
-    return () => el.removeEventListener('loadedmetadata', seekThere);
-  }, [node.id, deck]);
-
-  // A new src resets rate and volume — and does it when the media loads, which
-  // is after this effect runs, so `onLoadedMetadata` below applies them again.
-  // Without that second pass every station started at 1x and then jumped.
+  // The player is made after the transport's first state, so the reader's
+  // stored speed and volume have to be written to it once it exists.
   const { apply } = transport;
   useEffect(apply, [apply, node.id, transport.rate, transport.volume, transport.muted]);
 
@@ -131,7 +134,7 @@ export function DeckPane({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, deck]);
+  }, [playing, deck, audio]);
 
   if (!deck) {
     // Pending is the ordinary case now: the path lands whole and the stations
@@ -351,22 +354,6 @@ export function DeckPane({
           </div>
         </div>
       </div>
-
-      <audio
-        ref={audio}
-        src={audioSrc}
-        onTimeUpdate={(e) => {
-          const now = Math.round(e.currentTarget.currentTime * 1000);
-          // Coarse, but the only ticker while paused or seeking; the frame loop
-          // above owns the position during playback.
-          if (!playing) setMs(now);
-          onProgress?.(now);
-        }}
-        onLoadedMetadata={(e) => { e.currentTarget.playbackRate = transport.rate; }}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={onEnded}
-      />
     </main>
   );
 }

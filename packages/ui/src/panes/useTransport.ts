@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const RATES = [0.75, 1, 1.25, 1.5, 2, 3] as const;
 
+/** What the transport drives: `<audio>`'s own names, so either can stand behind it. */
+export type TransportMedia = Pick<
+  HTMLMediaElement,
+  'currentTime' | 'duration' | 'paused' | 'playbackRate' | 'volume' | 'muted' | 'play' | 'pause'
+>;
+
 /** Tap distance at 1x. Scales with rate so a jump covers the same amount of narration. */
 const SEEK_BASE_S = 5;
 /** Held longer than this and the press is a hold, not a tap. */
@@ -43,7 +49,7 @@ export interface Transport {
   seek: (deltaS: number) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
-  /** Write rate and volume onto the element, which resets both when new media loads. */
+  /** Write rate and volume onto the player, which is created knowing neither. */
   apply: () => void;
 }
 
@@ -58,7 +64,7 @@ export interface Transport {
  * Station changes (↑ / ↓) belong to the app, not here: they are not transport.
  */
 export function useTransport(
-  audio: React.RefObject<HTMLAudioElement | null>,
+  audio: React.RefObject<TransportMedia | null>,
   enabled = true,
   onFullscreen?: () => void,
   /** Where the reader's stored default puts the dial at the start of a session. */
