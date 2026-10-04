@@ -173,8 +173,9 @@ body {
 .drop-sub { font-size: calc(12.5px * var(--text-scale, 1)); color: var(--dim); }
 .drop-cta { font-size: calc(13px * var(--text-scale, 1)); font-weight: 600; color: var(--accent); margin-top: 6px; }
 
-.shelf { display: flex; flex-direction: column; gap: 8px; }
-.shelf-title { font-size: calc(10.5px * var(--text-scale, 1)); letter-spacing: .1em; color: var(--dim); font-weight: 600; }
+.shelf { display: flex; flex-direction: column; gap: 12px; }
+/* Above the 14px card names, so the heading leads its cards instead of captioning them. */
+.shelf-title { font-size: calc(16px * var(--text-scale, 1)); letter-spacing: -.011em; color: var(--ink); font-weight: 640; }
 .shelf-item {
   font: inherit; text-align: left; cursor: pointer; padding: 12px 14px;
   display: flex; flex-direction: column; gap: 4px;
