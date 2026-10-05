@@ -5,7 +5,7 @@ const signed = Boolean(process.env.ELECTROBUN_DEVELOPER_ID);
 const notarized = signed && Boolean(process.env.ELECTROBUN_APPLEIDPASS);
 
 export default {
-  app: { name: 'Cairn', identifier: 'dev.cairn.app', version: '0.1.4' },
+  app: { name: 'Cairn', identifier: 'dev.jasper.cairn', version: '0.1.4' },
   build: {
     mainProcess: 'cottontail',
     cottontail: { entrypoint: 'src/main/index.ts' },
