@@ -1,5 +1,9 @@
 import type { ElectrobunConfig } from 'electrobun';
 
+// A checkout without the certificate still packages; release.yml refuses to publish an unnotarized app.
+const signed = Boolean(process.env.ELECTROBUN_DEVELOPER_ID);
+const notarized = signed && Boolean(process.env.ELECTROBUN_APPLEIDPASS);
+
 export default {
   app: { name: 'Cairn', identifier: 'dev.cairn.app', version: '0.1.4' },
   build: {
@@ -17,7 +21,7 @@ export default {
     watchIgnore: ['dist/**'],
     // `icons` is the default path, named here because it is generated:
     // scripts/make-iconset.py rebuilds it from icon.src.png.
-    mac: { bundleCEF: false, icons: 'icon.iconset' },
+    mac: { bundleCEF: false, icons: 'icon.iconset', codesign: signed, notarize: notarized },
     win: { icon: 'icon.iconset/icon_256x256.png' },
   },
 } satisfies ElectrobunConfig;

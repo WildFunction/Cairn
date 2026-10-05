@@ -28,7 +28,7 @@ cd apps/desktop
 bun run dev       # Vite only: the three panes, no model, no shell
 bun run build     # bundle the webview — catches node:* leaking into it
 bun run start     # the real desktop app
-bun run package   # a distributable .app
+bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity
 ```
 
 `bun run start` needs a model — an API key, or a `codex login` for the OpenAI Codex provider — and a network path to the narration service. Outside-the-book search defaults
