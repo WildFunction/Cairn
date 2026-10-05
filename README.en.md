@@ -36,13 +36,6 @@ brew install --cask jiehaoZ/tap/cairn
 [latest release](https://github.com/jiehaoZ/Cairn/releases/latest). So far it has only been tested on
 Apple Silicon Macs.
 
-The app is not notarized. Homebrew takes care of that; if you installed the DMG yourself and macOS
-says the app is damaged or cannot be opened, run this once after moving it to Applications:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Cairn.app
-```
-
 **Windows (untested).** Each release also carries a Windows x64 installer, `Cairn-<version>-x64-Setup.zip`:
 unzip it and run `Cairn-Setup.exe`, keeping the `.installer` folder beside it. It is built by CI and has never been run on a real Windows machine, so expect rough edges. The installer
 is unsigned, so SmartScreen will ask you to confirm with **More info → Run anyway**. Books are stored in `%APPDATA%\Cairn`. If something breaks, please
