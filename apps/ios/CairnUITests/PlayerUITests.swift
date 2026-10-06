@@ -106,6 +106,29 @@ final class PlayerUITests: XCTestCase {
         XCTAssertEqual(state("controls"), "false", "a hold is not also a tap")
     }
 
+    private func swipeFromTheLeftEdge() {
+        let window = app.windows.firstMatch
+        let start = window.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.6)).withOffset(CGVector(dx: 2, dy: 0))
+        start.press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.6)))
+    }
+
+    func testASwipeFromTheLeftEdgeGoesBackToTheShelf() {
+        swipeFromTheLeftEdge()
+        XCTAssertTrue(app.buttons["shelf.settings"].waitForExistence(timeout: 4))
+        XCTAssertFalse(probe.element.exists)
+    }
+
+    func testInFullScreenTheEdgeSwipeDoesNotLeaveThePlayer() {
+        video.tap()
+        app.buttons["player.fullscreen"].tap()
+        waitFor("fullscreen", "true")
+        waitForWindow(landscape: true)
+        swipeFromTheLeftEdge()
+        RunLoop.current.run(until: Date().addingTimeInterval(1))
+        XCTAssertTrue(probe.element.exists)
+        XCTAssertEqual(state("fullscreen"), "true")
+    }
+
     func testTheFullScreenButtonTurnsToLandscapeAndTheChevronTurnsBack() {
         waitFor("playing", "true")
         pause()
