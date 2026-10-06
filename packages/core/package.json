@@ -18,7 +18,8 @@
     "./store/*": "./src/store/*.ts",
     "./runtime": "./src/runtime/index.ts",
     "./runtime/*": "./src/runtime/*.ts",
-    "./books/*": "./src/books/*.ts"
+    "./books/*": "./src/books/*.ts",
+    "./sync/*": "./src/sync/*.ts"
   },
   "dependencies": {
     "edge-tts-universal": "^1.4.0",

@@ -1,0 +1,53 @@
+{
+  "path": ["n0", "n1", "recap"],
+  "cases": [
+    {
+      "name": "the newer place wins even when it is further back",
+      "local": { "nodeId": "n1", "ms": 40000, "updatedAt": 1000, "device": "Mac" },
+      "remote": { "nodeId": "n0", "ms": 9000, "updatedAt": 2000, "device": "iPhone" },
+      "winner": "remote"
+    },
+    {
+      "name": "an older place loses even when it is further along",
+      "local": { "nodeId": "n0", "ms": 9000, "updatedAt": 5000, "device": "iPhone" },
+      "remote": { "nodeId": "recap", "ms": 1000, "updatedAt": 4999, "device": "Mac" },
+      "winner": "local"
+    },
+    {
+      "name": "on a tie the later station wins",
+      "local": { "nodeId": "n0", "ms": 90000, "updatedAt": 3000, "device": "iPhone" },
+      "remote": { "nodeId": "n1", "ms": 10, "updatedAt": 3000, "device": "Mac" },
+      "winner": "remote"
+    },
+    {
+      "name": "on a tie in the same station the later second wins",
+      "local": { "nodeId": "n1", "ms": 20001, "updatedAt": 3000, "device": "iPhone" },
+      "remote": { "nodeId": "n1", "ms": 20000, "updatedAt": 3000, "device": "Mac" },
+      "winner": "local"
+    },
+    {
+      "name": "a station the path no longer has counts as before the start",
+      "local": { "nodeId": "gone", "ms": 50000, "updatedAt": 3000, "device": "iPhone" },
+      "remote": { "nodeId": "n0", "ms": 0, "updatedAt": 3000, "device": "Mac" },
+      "winner": "remote"
+    },
+    {
+      "name": "an exact tie keeps what this device has",
+      "local": { "nodeId": "n1", "ms": 500, "updatedAt": 3000, "device": "iPhone" },
+      "remote": { "nodeId": "n1", "ms": 500, "updatedAt": 3000, "device": "Mac" },
+      "winner": "local"
+    },
+    {
+      "name": "nothing here yet takes what the other side has",
+      "local": null,
+      "remote": { "nodeId": "n0", "ms": 12000, "updatedAt": 1, "device": "Mac" },
+      "winner": "remote"
+    },
+    {
+      "name": "nothing from the other side keeps this one",
+      "local": { "nodeId": "n0", "ms": 12000, "updatedAt": 1, "device": "iPhone" },
+      "remote": null,
+      "winner": "local"
+    }
+  ]
+}

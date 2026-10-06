@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "start": "electrobun prepare && vite build && electrobun dev",
-    "package": "electrobun prepare && vite build && electrobun build --env=stable"
+    "package": "electrobun prepare && vite build && electrobun build --env=stable",
+    "sync-helper": "xcodebuild -project sync-helper/CairnSync.xcodeproj -scheme CairnSync -configuration Debug -derivedDataPath sync-helper/build -allowProvisioningUpdates build"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "0.87.1",

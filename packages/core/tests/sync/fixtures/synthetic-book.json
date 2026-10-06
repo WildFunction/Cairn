@@ -1,0 +1,49 @@
+{
+  "records": [
+    {
+      "type": "Station",
+      "name": "n0",
+      "fields": {
+        "deck": {
+          "string": "{\"nodeId\":\"n0\",\"slides\":[{\"layout\":\"title\",\"title\":\"The first thing\",\"atMs\":0},{\"layout\":\"points\",\"heading\":\"Two points\",\"points\":[\"One\",\"Two\"],\"atMs\":4000}],\"narration\":[{\"text\":\"This is the first thing.\",\"startMs\":0,\"endMs\":4000},{\"text\":\"One, and then two.\",\"startMs\":4000,\"endMs\":9000}],\"audioPath\":\"audio/n0.mp3\",\"durationMs\":9000}"
+        },
+        "audio": {
+          "asset": "audio/n0.mp3"
+        },
+        "fingerprint": {
+          "string": "bf8e3ee8bc2d7a7e"
+        }
+      }
+    },
+    {
+      "type": "Station",
+      "name": "recap",
+      "fields": {
+        "deck": {
+          "string": "{\"nodeId\":\"recap\",\"slides\":[{\"layout\":\"title\",\"title\":\"Looking back\",\"atMs\":0}],\"narration\":[{\"text\":\"That was the path.\",\"startMs\":0,\"endMs\":3000}],\"audioPath\":\"audio/recap.mp3\",\"durationMs\":3000}"
+        },
+        "audio": {
+          "asset": "audio/recap.mp3"
+        },
+        "fingerprint": {
+          "string": "3a3463c1deb37edf"
+        }
+      }
+    },
+    {
+      "type": "Book",
+      "name": "book",
+      "fields": {
+        "manifest": {
+          "string": "{\"format\":1,\"id\":\"two-stations-a1b2c3\",\"title\":\"Two Stations\",\"author\":\"A. Writer\",\"language\":\"en\",\"kind\":\"book\",\"intro\":\"A book that exists to be decoded.\",\"minutes\":3,\"path\":{\"bookId\":\"two-stations-a1b2c3\",\"title\":\"Two Stations\",\"type\":\"knowledge\",\"nodes\":[{\"id\":\"n0\",\"idx\":0,\"title\":\"The first thing\",\"kind\":\"concept\",\"brief\":\"What the first station makes clear.\",\"keyPoints\":[\"One\",\"Two\"],\"sourceChapters\":[0,1],\"estMinutes\":2},{\"id\":\"recap\",\"idx\":1,\"title\":\"Looking back\",\"kind\":\"recap\",\"brief\":\"The path in one breath.\",\"keyPoints\":[],\"sourceChapters\":[],\"estMinutes\":1}],\"stages\":[{\"title\":\"Building\",\"nodeIds\":[\"n0\"]},{\"title\":\"Closing\",\"nodeIds\":[\"recap\"]}],\"totalMinutes\":3,\"generatedAt\":\"2026-10-06T00:00:00.000Z\"}}"
+        },
+        "cover": {
+          "asset": "cover.jpg"
+        },
+        "fingerprint": {
+          "string": "ebc54bbd3d1fa46f"
+        }
+      }
+    }
+  ]
+}

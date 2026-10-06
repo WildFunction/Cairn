@@ -7,6 +7,7 @@
  * The rule that decides what belongs here: if a file imports `node:*` for
  * anything but pure path arithmetic, it is runtime, not domain.
  */
+export { cloudKitStore } from './cloudkit-helper';
 export { codexCliProvider, type CodexOptions } from './codex-cli';
 export {
   type CodexCredentials, type CodexWireApi,

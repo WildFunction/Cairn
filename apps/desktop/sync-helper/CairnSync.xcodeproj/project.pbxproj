@@ -1,0 +1,46 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		A10000000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* main.swift */; };
+		A20000000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* CairnSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CairnSync.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000003 /* CairnSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CairnSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000000000000000000001 = {isa = PBXGroup; children = (A30000000000000000000002 /* CairnSync */, A30000000000000000000003 /* Products */, ); sourceTree = "<group>"; };
+		A30000000000000000000002 /* CairnSync */ = {isa = PBXGroup; children = (A20000000000000000000001 /* main.swift */, A20000000000000000000002 /* CairnSync.entitlements */, ); path = CairnSync; sourceTree = "<group>"; };
+		A30000000000000000000003 /* Products */ = {isa = PBXGroup; children = (A20000000000000000000003 /* CairnSync.app */, ); name = Products; sourceTree = "<group>"; };
+		A40000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* main.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
+		A50000000000000000000001 /* CairnSync */ = {isa = PBXNativeTarget; buildConfigurationList = A70000000000000000000002; buildPhases = (A40000000000000000000001 /* Sources */, ); buildRules = (); dependencies = (); name = CairnSync; productName = CairnSync; productReference = A20000000000000000000003 /* CairnSync.app */; productType = "com.apple.product-type.application"; };
+		A60000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2700; }; buildConfigurationList = A70000000000000000000001; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, ); mainGroup = A30000000000000000000001; productRefGroup = A30000000000000000000003 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001 /* CairnSync */, ); };
+		A80000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = macosx; MACOSX_DEPLOYMENT_TARGET = 14.0; SWIFT_VERSION = 5.0; ONLY_ACTIVE_ARCH = YES; }; name = Debug; };
+		A80000000000000000000002 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CairnSync/CairnSync.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = DVKY3N289Q;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.jasper.cairn.sync;
+				PRODUCT_NAME = CairnSync;
+			}; name = Debug; };
+		A80000000000000000000003 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = macosx; MACOSX_DEPLOYMENT_TARGET = 14.0; SWIFT_VERSION = 5.0; }; name = Release; };
+		A80000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CairnSync/CairnSync.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = DVKY3N289Q;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.jasper.cairn.sync;
+				PRODUCT_NAME = CairnSync;
+			}; name = Release; };
+		A70000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000001 /* Debug */, A80000000000000000000003 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A70000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000002 /* Debug */, A80000000000000000000004 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+	};
+	rootObject = A60000000000000000000001 /* Project object */;
+}
