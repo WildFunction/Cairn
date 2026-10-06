@@ -95,8 +95,9 @@ final class StageView: UIView {
             pending.append((script, arguments))
             return
         }
-        webView.callAsyncJavaScript(script, arguments: arguments, in: nil, in: .page) { [log] result in
-            if case .failure(let error) = result {
+        // Not the overlay's Result form: that binds libswiftWebKit, which iOS 18.4 and 18.5 do not ship.
+        webView.__callAsyncJavaScript(script, arguments: arguments, inFrame: nil, in: .page) { [log] _, error in
+            if let error {
                 log.error("stage call failed: \(error.localizedDescription, privacy: .public)")
             }
         }
