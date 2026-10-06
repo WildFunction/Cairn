@@ -35,6 +35,17 @@ parts are `runtime/` (spawning `codex`) and the Electrobun packaging. The
 **No web build.** Generation writes to disk and the fallback `codex exec` needs a local
 process; nothing is shared, so there is nothing to deploy.
 
+**And a player on the phone.** `apps/ios` plays what the Mac generated, from the owner's private
+iCloud database. It generates nothing and holds no chapter text:
+
+```
+Mac                                            iPhone (UIKit)
+bun run sync-book ─► CairnSync helper ─┐       CloudKitBooks (CKSyncEngine)
+main process ◄─ position ─► helper ────┼─────► LibrarySync ─► books/<id>/ on disk
+                                       │       PlayerModel ─► AudioEngine (SwiftAudioEx)
+                   iCloud.dev.jasper.cairn     PlayerViewController ─► WKWebView (stage page)
+```
+
 ---
 
 ## 2. Package boundaries
@@ -53,8 +64,10 @@ packages/core/     Domain types, parsing, pipeline, storage — no framework imp
   store/           library.ts (layout) · library-disk.ts (Library) · file-store.ts
   runtime/         codex-cli.ts, codex-credentials.ts, edge-tts-ws.ts, trace-dir.ts
 packages/ui/       React components, design tokens, slide layout renderers
-apps/desktop/      Electrobun shell: main process + webview
-scripts/           add-book.ts, replay.ts, typecheck.ts
+apps/desktop/      Electrobun shell: main process + webview; sync-helper/ (CloudKit)
+apps/ios/          The iPhone player: Cairn/ (UIKit app) · CairnKit/ (Swift package, no
+                   UIKit) · stage/ (the slide page, a second webview entry)
+scripts/           add-book.ts, replay.ts, sync-book.ts, export-ios-sample.ts, typecheck.ts
 ```
 
 **The dependency arrow points one way.** `pipeline/` and `llm/` depend on interfaces —
@@ -125,6 +138,12 @@ $CAIRN_DATA_DIR/            default ~/Library/Application Support/Cairn/
 ```
 
 Never beside the app: its cwd is inside its own bundle and is rebuilt on every `electrobun dev`.
+
+On the phone, `Application Support/Library/books/<id>/` has the same shape, so one reader
+serves both — `manifest.json` (the `Book` record's manifest, verbatim), `decks/`, `audio/`,
+`cover.*`, and `state.json`, which is local only: the fingerprints on disk, the reader's place,
+and whether the book is finished. The built-in book is the same layout inside the app bundle and
+is read in place. The directory is excluded from device backups, because iCloud can restore it.
 
 **Deck keys are content fingerprints, not positions.** `reduce` re-runs on every generation and
 the model is not deterministic, so station `n0` routinely means a different station than it did
@@ -354,6 +373,37 @@ The worklet module is the two functions' own source, loaded from a Blob URL — 
 is the same under Vite's dev server and `views://`. That is why `makeStretcher` and `register`
 may reference nothing outside themselves; `tests/audio/worklet.test.ts` evaluates the text with
 only the worklet's globals in reach, so a stray reference fails there.
+
+### The phone's slide is a web page; everything else is native
+
+Fourteen layouts in TypeScript, and more to come, cannot be maintained twice. The phone shows
+the built slide page in a `WKWebView` that takes no touches; controls, gestures, the chapter list
+and the sound are UIKit on top of and beside it. The sound is the only clock: Swift tells the page
+where the audio is (`sync`) on every transport change and every 500 ms, and the page carries the
+clock forward per frame between two tellings. Measured on the simulator, a steady sync finds the
+page within ±7 ms; the first sync after playback starts can be off by ~270 ms while AVPlayer's
+reported time catches up, which is why the app syncs every 250 ms for two seconds after a start.
+
+### iCloud: CloudKit's private database, with the Mac writing through a helper
+
+A book is one zone (`book_<id>`): a `Station` record per station, then the `Book` record, written
+last so a phone that sees a book sees all of it; and a `Progress` record both sides write. The
+Mac's main process has no CloudKit binding and no entitlement, so a small signed helper does each
+call (`sync/wire.ts` is the pipe). The phone uses `CKSyncEngine` behind the `CloudBooks`
+protocol; if it ever fails to deliver assets reliably, `CKFetchRecordZoneChangesOperation` behind
+the same protocol is the fallback. A record whose fingerprint is already on disk is skipped; a
+`manifest` whose `format` is newer than the build is listed as needing an update and not parsed.
+
+The place is merged by one rule written twice and tested against one table: the newer
+`updatedAt` wins, and on a tie the one further along the path.
+
+Which books are in iCloud is decided on the Mac (`sync/auto.ts`), from the `icloudSync` setting
+and a small ledger, `sync.json`: the books this Mac uploaded, the books its owner switched
+off, and the ones switched off whose copy in iCloud is still to be removed — chosen while syncing
+was off, or while offline — which the next run takes out. A removal on the phone deletes the book's zone and nothing else; the Mac tells it from a
+book never uploaded by the ledger — uploaded from here, gone from there — and switches the book
+off rather than uploading it again. That is why a place is saved with `createZone: false`: a
+place must never bring back a zone its book was removed from.
 
 ### Superseded, and why it is worth knowing
 

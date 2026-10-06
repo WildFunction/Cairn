@@ -24,7 +24,7 @@ modules fit together; [DESIGN.md](./DESIGN.md) covers how they look.
 
 **Turn an ebook into a path you can walk to the end, and walk it yourself.**
 
-One owner, one machine, run locally.
+One owner, run locally: books are made on the Mac, and can be listened to on an iPhone.
 
 ### What it is not
 
@@ -306,6 +306,45 @@ book where it stopped, **paused**: being dropped into the middle of a sentence u
 worse than pressing play. A position in the first or last few seconds of a station starts that
 station over, because resuming there buys nothing. Going back to the shelf is deliberate, so the
 launch after that opens on the shelf; each book's position is still kept.
+
+For a book in iCloud the position also travels: the Mac reads iCloud's copy when the book opens,
+before the first station plays, and keeps whichever of the two was written later.
+
+### On the iPhone
+
+A player, and nothing else: no generation, no companion, no chapter text on the device. Books
+arrive from the Mac through the owner's private iCloud; one book is built in, so a fresh install
+with no account has something to open.
+
+- **Shelf.** One card per book: cover (or the title on a plain board), author, chapter count and
+  minutes, the intro, and a foot line — where the reader is, `Not started`, `Finished`, or
+  `Downloading 6 / 17` while stations arrive. A book is listed once its book record has landed and
+  opens once its first station is on disk; stations still on the way show as pending, never
+  hidden. Tapping a book plays it at the stored place; a finished one starts again from the top and
+  stays `Finished` until a minute of it has been heard again. Pull to refresh asks iCloud for changes.
+- **Player, after YouTube.** The slide pinned on top with captions inside it; below, the
+  station's title and brief and the chapters grouped by stage. A tap shows the controls (back,
+  captions, speed, sleep timer, previous / play / next, time, full screen, a scrubber); they leave
+  after 2.5 s and stay while paused. Double tap seeks 10 s and repeats add up; holding plays at
+  2× (3× if the chosen speed is already 2×) without changing pitch. Full screen by button or by
+  turning the phone; there, the chapters open as a sheet.
+- **Around it.** Sound continues in the background with lock-screen controls; a call or pulled
+  headphones pause it; the screen does not dim while playing. A sleep timer offers 15 / 30 / 45
+  minutes, an hour, or the end of the chapter, and fades out over the last five seconds. Going
+  back to the shelf stops playback — there is no mini player.
+- **Settings.** Language (follow the system, English or 简体中文 — it takes effect at once),
+  iCloud account state and `Sync now`, `Autoplay next chapter`, storage used, version,
+  acknowledgements. Appearance follows the system.
+
+**What is in iCloud is what is on the phone.** On the Mac, Settings → Data has one switch, off
+by default: with it on, every finished book uploads. The list under it is there either way, so
+what goes up can be chosen first: it shows what each book takes and lets any one be switched off —
+which takes it out of iCloud and off the phone and keeps it out. On the phone, touching and holding a book that came from iCloud offers the same removal;
+the Mac notices and switches that book off. The book itself always stays on the Mac. Turning the
+main switch off stops uploading and stops syncing the place but leaves iCloud as it is; emptying
+it is a separate, confirmed button.
+
+Not in this version: keeping a book in iCloud but off the phone, a mini player, the companion, iPad.
 
 ---
 
@@ -612,6 +651,7 @@ tell whether a prompt change made things better or worse.
 | Spaced repetition | Conflicts with "you walk it, then you are done" |
 | Retrieval **within** one book | The index fits in context (§6.7). Retrieval **across** books is a separate question, and the answer there is yes at ~200 finished books (§7.5) |
 
-**Not built yet, but in scope:** the `world` layout (a novel's setting); the plain-text
+**Not built yet, but in scope:** the sync helper shipped inside the packaged Mac app (the iCloud
+switch works in a development build only until then); the `world` layout (a novel's setting); the plain-text
 rendering of a deck; cross-book memory (§7); pruning the pipeline cache — content-addressed keys
 mean every regeneration adds a fresh set of entries and audio, and nothing removes the old ones.

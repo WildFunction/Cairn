@@ -19,17 +19,30 @@ cd apps/desktop && bunx electrobun prepare   # once per checkout; projects the S
 
 bun test                                     # every package
 bun test packages/core/tests/fit.test.ts     # one file
-bun run typecheck                            # all four projects, strict
+bun run typecheck                            # all five projects, strict
 bun run add-book <file>                      # the app's book builder, from the terminal
 bun run replay <bookId> [file]               # list recorded model calls, or re-send one
 bun run eval --judge deepseek-v4-pro         # judge a pipeline change against the accepted baseline
+bun run sync-book <bookId> | --all           # push finished books to the owner's iCloud; needs the helper below
 
 cd apps/desktop
 bun run dev       # Vite only: the three panes, no model, no shell
 bun run build     # bundle the webview — catches node:* leaking into it
 bun run start     # the real desktop app
 bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity
+bun run sync-helper   # the Swift helper that talks to CloudKit; needs Xcode signed in to the team
+
+bun run ios:sample   # export the built-in book from the library into the iOS app (git-ignored)
+bun run ios:stage    # build the iOS app's slide page (git-ignored)
+cd apps/ios && xcodegen                      # regenerate Cairn.xcodeproj after adding or moving a file
+cd apps/ios/CairnKit && swift test           # the phone's logic, on the Mac, no simulator
+xcodebuild test -project apps/ios/Cairn.xcodeproj -scheme Cairn \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.1' CODE_SIGNING_ALLOWED=NO
 ```
+
+The iOS app needs both generated folders before it builds, and a build phase says which is
+missing. `ios:sample` reads *The Art of War* (`the-art-of-war-ed02db`) from the library, so a fresh
+clone needs that book generated first.
 
 `bun run start` needs a model — an API key, or a `codex login` for the OpenAI Codex provider — and a network path to the narration service. Outside-the-book search defaults
 to keyless Firecrawl; Brave Search and Tavily are selectable with keys. `bun run dev` needs none of them and says so in the
@@ -83,18 +96,33 @@ packages/
                  verdict. Never imported by the app
     store/       library.ts (layout, webview-safe), library-disk.ts (the library
                  on disk: one instance per root), file-backed JobStore
+    sync/        What a book is in iCloud (book.ts), the push that sends it
+                 (push.ts), the pipe to the helper (wire.ts), the reader's place
+                 and which copy wins (progress.ts, position.ts), and keeping
+                 iCloud in step with the library once switched on (auto.ts).
+                 Pure: the cloud is the `CloudStore` interface
     runtime/     Everything that spawns a process or talks to a service:
-                 codex-cli.ts, edge-tts-ws.ts, trace-dir.ts
+                 codex-cli.ts, edge-tts-ws.ts, trace-dir.ts, cloudkit-helper.ts
   ui/            Shared React components and design tokens; slide layout renderers
     i18n/        Two dictionaries and the type that keeps them in step
     settings/    The settings panel, and the preferences the webview owns
 apps/
-  desktop/       Electrobun shell — the only app. Authoring and playback in one window.
+  desktop/       Electrobun shell — the only place books are made. Authoring and playback in one window.
     src/main/    Main process. `index.ts` is the composition root: it builds the
                  narrator, the book builder and the RPC handlers and passes them
                  in. `store.ts` holds the process's one `Library`.
     src/shared/  Types both sides import; `schema.ts` is the one RPC contract
-scripts/         add-book.ts, replay.ts, typecheck.ts — thin drivers, no logic of their own
+    sync-helper/ CairnSync, a Swift helper app: the only process with the iCloud
+                 entitlement. One JSON request in, one reply out, per call
+  ios/           The iPhone player, UIKit in Swift. `project.yml` is the source;
+                 Cairn.xcodeproj is generated from it by XcodeGen
+    Cairn/       The app target: App/ (composition root), Shelf/, Player/,
+                 Settings/, Sync/, Theme/, Resources/
+    CairnKit/    A Swift package with no UIKit: models, the library on disk, the
+                 playback rules, the player model, the iCloud mapping
+    stage/       The slide page the app shows in a web view: the desktop's own
+                 renderers, driven by `load` / `sync` / `set` from Swift
+scripts/         add-book.ts, replay.ts, sync-book.ts, export-ios-sample.ts, typecheck.ts — thin drivers, no logic of their own
 ```
 
 **The dependency arrow points one way.** `pipeline/` and `llm/` depend on interfaces
@@ -109,7 +137,13 @@ dependency, which passes the bundle and simply ships. `pipeline/voice.ts` and `p
 exist for exactly this: the player needs the voice defaults and the accepted file types, and
 their neighbours import `node:path` and JSZip. `apps/desktop/tests/webview/imports.test.ts`
 walks the renderer's real import graph from `main.tsx` and fails on either, so `bun test`
-catches it now; the bundle stays a separate check.
+catches it now; the bundle stays a separate check. The phone's slide page (`apps/ios/stage`) is a
+second renderer under the same rule, and the same test walks it.
+
+**The phone never models a slide.** Swift hands a deck to the slide page as the text it was
+stored as, and which slide, items and caption are on screen at a given second comes from
+`frameAt` in `packages/ui/src/slides/frame.ts` — the function the desktop's `DeckPane` calls too.
+A layout added on the Mac reaches the phone by rebuilding the page.
 
 **Process-scoped objects are built in one place.** `main/index.ts` constructs them and passes
 them to what needs them — the pattern llm-space's `start-desktop-app.ts` uses. A new manager is
@@ -180,10 +214,17 @@ Never: restating the signature; narrating steps (`// loop over chapters`); comme
 
 - `bun test` for everything; `bun test <path>` for one file or package.
 - Tests mirror source paths: `src/parse/chunk.ts` → `tests/parse/chunk.test.ts`.
-- **Four separate typechecks must pass, not one**: `packages/core`, `packages/ui`,
-  `apps/desktop/tsconfig.json`, `apps/desktop/tsconfig.main.json`. `bun run typecheck` runs all
-  four and names any it skipped; a script that silently checks one of four is how the desktop
-  projects went unchecked.
+- **Five separate typechecks must pass, not one**: `packages/core`, `packages/ui`,
+  `apps/desktop/tsconfig.json`, `apps/desktop/tsconfig.main.json`, `apps/ios/stage/tsconfig.json`.
+  `bun run typecheck` runs all five and names any it skipped; a script that silently checks one
+  of four is how the desktop projects went unchecked.
+- **The phone has two more**: `swift test` in `apps/ios/CairnKit` (Swift Testing) and
+  `xcodebuild test` for the `Cairn` scheme (UI tests, XCTest). The UI tests read the player's
+  state from a Debug-only accessibility element, `player.probe`.
+- **Two languages, one contract.** `packages/core/tests/sync/fixtures/` holds a synthetic book
+  and the position-merge table. The TypeScript tests assert the Mac still writes them; the Swift
+  tests decode and apply them. Regenerate the book fixture with `UPDATE_FIXTURES=1` only for an
+  intended change, and deploy the CloudKit schema before shipping it.
 - Pure logic is extracted so it can be tested without a browser or a model — `caption.ts`,
   `split.ts`, `fingerprint.ts`, `budget.ts`, `scheduler.ts`, `trace.ts`. This is why `runtime/`
   exists: a stage that shells out cannot be tested without the tool installed.
@@ -312,16 +353,24 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
   directory, and requires a per-launch token as the first path segment. Traversal is rejected
   before the join and re-checked against the root after, because a decoded segment can contain a
   separator.
-- **Generated books stay local.** `.gitignore` keeps the library and pipeline cache out of the
-  repository; they contain full chapter text from books the owner bought. Planned iCloud sync
-  contradicts this sentence — see the note under Boundaries before building it.
+- **A book's text stays local; the rest leaves only when its owner syncs.** `.gitignore` keeps
+  the library and pipeline cache out of the repository. Syncing a finished book sends its path,
+  decks, narration audio and cover to the owner's private iCloud database (`iCloud.dev.jasper.cairn`)
+  and nowhere else. `chapters.json` and `notes.json` never go: `sync/book.ts` is not handed them.
+  Nothing is uploaded until the owner turns on `icloudSync` in settings (off by default) or runs
+  `bun run sync-book`. A book switched off there, or removed on the phone, is taken out of iCloud
+  and recorded in `sync.json` beside the library so it is not uploaded again.
+- **The reader's place travels too, for a book in iCloud.** A `Progress` record in the book's zone
+  holds the station, the second, when, and which kind of device (`Mac`, `iPhone`). The phone and
+  the Mac each write it and the newer one wins. Nothing is written for a book that was never
+  pushed: the Mac never creates a zone to hold a place.
 
 ## Commits and pull requests
 
 - Conventional commits: `<type>: <description>`, type one of
   `feat` `fix` `refactor` `docs` `test` `chore` `perf` `ci`.
 - One reason per commit. A formatting sweep and a behaviour change do not belong together.
-- Before committing: `bun test`, all four typechecks, and `cd apps/desktop && bun run build`
+- Before committing: `bun test`, all five typechecks, and `cd apps/desktop && bun run build`
   pass, and no generated book, audio file or cache entry is staged. The bundle is a separate
   check on purpose: the import-graph test covers the webview's imports, the bundle covers
   everything Vite does with them.
@@ -333,8 +382,10 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
 accounts · telemetry · any networked server component.
 
 **Planned, and the reason several decisions look the way they do:** books generated on the Mac
-sync (iCloud) and are read on an iPhone. Nothing is built for it yet, but three consequences
-already bind:
+sync (iCloud) and are read on an iPhone. The upload (`sync/`, from the settings switch or
+`bun run sync-book`), the phone app (`apps/ios`) and the place syncing both ways exist; shipping
+the helper inside the packaged app does not — until then the Mac's side of sync works in a
+development build only, and the switch says so elsewhere. Four consequences bind:
 
 1. **The phone can only be a player.** An iOS app ships through the App Store, so it *is*
    sandboxed: no subprocess, no `codex`. Generation stays on the Mac. This is
@@ -343,11 +394,13 @@ already bind:
 2. **A book must be movable.** Everything the player needs lives under `books/<id>/`, and
    nothing persisted there may hold an absolute path — see `NodeDeck.audioPath`. `.cache/` is
    generation-side and never travels.
-3. **Syncing changes what "stays local" means.** `chapters.json` is the full text of a book the
-   owner bought, and today the Security section below can say it never leaves the machine.
-   Putting it in iCloud makes that false. Either the synced bundle excludes it — costing
-   anchored questions on the phone — or the claim gets rewritten honestly. Decide before
-   building sync, not after.
+3. **The synced book carries no chapter text.** `chapters.json` is the full text of a book the
+   owner bought, so it and `notes.json` stay on the Mac. The cost is accepted: no anchored
+   questions on the phone, which is a player and nothing more.
+4. **Production creates no schema.** CloudKit's Development environment makes record types as
+   they are first written; Production refuses every write until the schema is deployed from the
+   CloudKit Console, and a type deployed there can never be removed. Deploy before a release
+   that changes `sync/book.ts`, and never write a throwaway type outside Development.
 
 **In scope, not built:** the `world` layout (a novel's setting); the plain-text rendering of a
 deck; cross-book memory of what the reader has already walked
