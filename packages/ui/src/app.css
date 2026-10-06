@@ -782,6 +782,8 @@ body {
 .set-switch[aria-checked="true"] { background: var(--accent); }
 .set-switch[aria-checked="true"]::after { transform: translateX(16px); }
 .set-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Off and unreachable: a switch that cannot be thrown should not look like one that can. */
+.set-switch:disabled { opacity: .45; cursor: default; }
 
 .set-btn {
   font: inherit; font-size: calc(12px * var(--text-scale, 1)); padding: 5px 11px; cursor: pointer; white-space: nowrap;

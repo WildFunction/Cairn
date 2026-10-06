@@ -1,5 +1,9 @@
 import { CairnError } from '@cairn/core/errors';
 import type { ChatSession } from '@cairn/core/companion/types';
+import type { CloudSyncStatus } from '@cairn/core/sync/auto';
+import type { SyncedPlace } from '@cairn/core/sync/progress';
+import { PUSH_EVERY_MS } from '@cairn/core/sync/position';
+import { shouldPush } from './place-sync';
 import type { CompanionEvent } from './shared/companion-events';
 import type { BudgetId } from '@cairn/core/pipeline/budget';
 import { LIBRARY_INDEX, type LibraryEntry } from '@cairn/core/store/library';
@@ -49,6 +53,7 @@ export const inShell =
 
 const progressListeners = new Set<(p: Progress) => void>();
 const deckStatusListeners = new Set<(s: DeckStatus) => void>();
+const cloudStatusListeners = new Set<(status: CloudSyncStatus) => void>();
 const companionListeners = new Set<(event: CompanionEvent) => void>();
 const openSettingsListeners = new Set<() => void>();
 
@@ -61,6 +66,12 @@ export function onProgress(fn: (p: Progress) => void): () => void {
 export function onDeckStatus(fn: (s: DeckStatus) => void): () => void {
   deckStatusListeners.add(fn);
   return () => deckStatusListeners.delete(fn);
+}
+
+/** Uploads moving, and books found removed from the phone. */
+export function onCloudStatus(fn: (status: CloudSyncStatus) => void): () => void {
+  cloudStatusListeners.add(fn);
+  return () => cloudStatusListeners.delete(fn);
 }
 
 export function onCompanionEvent(fn: (event: CompanionEvent) => void): () => void {
@@ -83,6 +94,9 @@ async function makeRpc() {
       messages: {
         progress: (p: Progress) => {
           for (const fn of progressListeners) fn(p);
+        },
+        cloudStatus: (status: CloudSyncStatus) => {
+          for (const fn of cloudStatusListeners) fn(status);
         },
         deckStatus: (s: DeckStatus) => {
           for (const fn of deckStatusListeners) fn(s);
@@ -340,6 +354,58 @@ export function focusStation(bookId: string, nodeId: string): void {
   void connect()
     .then((rpc) => rpc.request.focusStation({ bookId, nodeId }, POLL_LIMIT))
     .catch(() => undefined);
+}
+
+/**
+ * The place iCloud holds for a book. Bounded tightly: the deck waits on it, and
+ * a slow answer is worth less than starting where this Mac stopped.
+ */
+export async function pullPlace(bookId: string): Promise<SyncedPlace | undefined> {
+  if (!inShell) return undefined;
+  return connect()
+    .then((rpc) => rpc.request.pullPlace({ bookId }, START_LIMIT))
+    .then((place) => place ?? undefined)
+    .catch(() => undefined);
+}
+
+/** Fire-and-forget, like `focusStation`: a dropped place costs the phone a few seconds, never this Mac. */
+const pushed = new Map<string, { readonly nodeId: string; readonly at: number }>();
+
+export function pushPlace(bookId: string, place: SyncedPlace, force = false): void {
+  if (!inShell) return;
+  // The deck reports its position several times a second; only a new station, a pause or a leave is urgent.
+  const now = Date.now();
+  const last = pushed.get(bookId);
+  if (!shouldPush(last, place, now, force, PUSH_EVERY_MS)) return;
+  const urgent = force || last?.nodeId !== place.nodeId;
+  pushed.set(bookId, { nodeId: place.nodeId, at: now });
+  void connect()
+    .then((rpc) => rpc.request.pushPlace({ bookId, place, force: urgent }, POLL_LIMIT))
+    .catch(() => undefined);
+}
+
+/* ---- which books are in iCloud ---- */
+
+/** Asks the helper and stats the library, so it gets longer than a poll. */
+export async function cloudStatus(): Promise<CloudSyncStatus | undefined> {
+  if (!inShell) return undefined;
+  return connect().then((rpc) => rpc.request.cloudStatus(undefined, LOGIN_LIMIT)).catch(() => undefined);
+}
+
+export function cloudSetBook(bookId: string, on: boolean): void {
+  if (!inShell) return;
+  void connect().then((rpc) => rpc.request.cloudSetBook({ bookId, on }, POLL_LIMIT)).catch(() => undefined);
+}
+
+export function cloudSyncNow(): void {
+  if (!inShell) return;
+  void connect().then((rpc) => rpc.request.cloudSyncNow(undefined, POLL_LIMIT)).catch(() => undefined);
+}
+
+/** Every book out of iCloud, one helper call each; throws if it could not be asked for. */
+export async function cloudRemoveAll(): Promise<ShellSettingsValues> {
+  if (!inShell) throw offline('offline_settings');
+  return (await connect()).request.cloudRemoveAll(undefined, ANSWER_LIMIT).catch(rethrow);
 }
 
 /** Opening a half-built book asks the main process to pick it back up. */

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useT, type ShellPrefs, type ShellSettings, type VoiceOption } from '@cairn/ui';
+import { useT, type CloudPanel, type ShellPrefs, type ShellSettings, type VoiceOption } from '@cairn/ui';
+import type { CloudSyncStatus } from '@cairn/core/sync/auto';
 import {
-  clearCache, dataDir, devBuild, getSettings, inShell, modelStatus, previewVoice,
-  revealDataDir, setSettings,
+  clearCache, cloudRemoveAll, cloudSetBook, cloudStatus, cloudSyncNow, dataDir, devBuild, getSettings, inShell,
+  modelStatus, onCloudStatus, previewVoice, revealDataDir, setSettings,
 } from './bridge';
 import {
   DEFAULT_SHELL_SETTINGS, defaultApiKey, EMPTY_PROFILE, VOICES,
@@ -33,6 +34,16 @@ export function useShellSettings(): ShellSettings | undefined {
   const [dev, setDev] = useState(false);
   const [model, setModel] = useState<ModelStatus>();
   const [previewing, setPreviewing] = useState<ContentLocale>();
+  const [cloudNow, setCloudNow] = useState<CloudSyncStatus>();
+
+  // Asked once, then kept current by the main process as uploads move
+  useEffect(() => {
+    if (!inShell) return undefined;
+    let live = true;
+    void cloudStatus().then((status) => { if (live && status) setCloudNow(status); });
+    const stop = onCloudStatus(setCloudNow);
+    return () => { live = false; stop(); };
+  }, []);
 
   /** One element reused for every audition, so two cannot overlap. */
   const audio = useRef<HTMLAudioElement | undefined>(undefined);
@@ -163,6 +174,22 @@ export function useShellSettings(): ShellSettings | undefined {
   }, []);
   const weread = useWereadAccount(reread);
 
+  const cloud = useMemo((): CloudPanel | undefined => (cloudNow ? {
+    reach: cloudNow.reach,
+    running: cloudNow.running,
+    books: cloudNow.books,
+    setBook: (bookId, on) => {
+      // Optimistic, like every other switch here; the main process's status replaces the guess
+      setCloudNow((now) => (now ? {
+        ...now,
+        books: now.books.map((book) => (book.id === bookId ? { ...book, state: on ? 'waiting' : 'off' } : book)),
+      } : now));
+      cloudSetBook(bookId, on);
+    },
+    syncNow: cloudSyncNow,
+    removeAll: async () => { setValues(await cloudRemoveAll()); },
+  } : undefined), [cloudNow]);
+
   return useMemo(() => {
     if (!inShell || !values) return undefined;
     return {
@@ -180,6 +207,7 @@ export function useShellSettings(): ShellSettings | undefined {
       revealDataDir: () => void revealDataDir(),
       clearCache,
       weread,
+      ...(cloud ? { cloud } : {}),
     } satisfies ShellSettings;
-  }, [values, setPref, setProvider, voicesFor, recheckModel, model, audition, previewing, dir, dev, weread]);
+  }, [values, setPref, setProvider, voicesFor, recheckModel, model, audition, previewing, dir, dev, weread, cloud]);
 }

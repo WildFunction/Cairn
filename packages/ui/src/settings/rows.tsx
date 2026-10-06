@@ -135,12 +135,13 @@ export function Select<T extends string>({
 }
 
 export function Switch({
-  id, checked, onChange, label,
+  id, checked, onChange, label, disabled = false,
 }: {
   id: string;
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
+  disabled?: boolean;
 }): ReactElement {
   return (
     <button
@@ -150,6 +151,7 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
     />
   );

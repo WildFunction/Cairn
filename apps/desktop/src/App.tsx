@@ -12,9 +12,11 @@ import { AddBook } from './AddBook';
 import { Home } from './Home';
 import {
   chatCancel, chatClear, chatHistory, chatSend, deleteBook, focusStation, inShell, libraryBase,
-  listBooks, onCompanionEvent, onDeckStatus, onOpenSettings, markBookFinished, resumeBook, retryBook, setMenuLocale,
-  wereadStart,
+  listBooks, onCompanionEvent, onDeckStatus, onOpenSettings, markBookFinished, pullPlace, pushPlace, resumeBook,
+  retryBook, setMenuLocale, wereadStart,
 } from './bridge';
+import type { SyncedPlace } from '@cairn/core/sync/progress';
+import { hasMoved, loadedAt, newerPlace, type Report, SETTLE_MS, toSynced } from './place-sync';
 import { shortcuts } from './shortcut';
 import { useBundle } from './useBundle';
 import { useShellSettings } from './useShellSettings';
@@ -109,14 +111,31 @@ export function App(): ReactElement {
       : [])), [chat.messages]);
 
   const path = bundle?.path;
-  /** Where the reader stopped in this book, read once per book, before any render. */
+  /** Where the phone stopped, if the book is in iCloud. Asked each time a book opens, before the deck mounts. */
+  const [cloudAt, setCloudAt] = useState<{ readonly bookId: string; readonly place?: SyncedPlace }>();
+  const askCloud = prefs.resume && path !== undefined && inShell;
+  useEffect(() => {
+    if (!askCloud || !path) return;
+    let live = true;
+    void pullPlace(path.bookId).then((remote) => {
+      if (live) setCloudAt({ bookId: path.bookId, ...(remote ? { place: remote } : {}) });
+    });
+    // Forgotten on the way out: a kept answer made reopening the same book resume at a stale place.
+    return () => { live = false; setCloudAt(undefined); };
+  }, [askCloud, path?.bookId]);
+  const pulling = askCloud && cloudAt?.bookId !== path?.bookId;
+  const remote = cloudAt?.bookId === path?.bookId ? cloudAt?.place : undefined;
+
+  /** Where the reader stopped in this book — here or on the phone, whichever is newer — before any render. */
   const place = useMemo(
-    () => (prefs.resume && path ? resume.placeFor(path.bookId) : undefined),
-    [prefs.resume, path, resume],
+    () => (prefs.resume && path
+      ? newerPlace(resume.placeFor(path.bookId), remote, path.nodes.map((n) => n.id))
+      : undefined),
+    [prefs.resume, path, resume, remote],
   );
   /** A book never played here starts where the reader stopped in WeChat Reading. */
   const [wereadAt, setWereadAt] = useState<{ readonly bookId: string; readonly nodeId?: string }>();
-  const askWeread = prefs.resume && path !== undefined && place === undefined;
+  const askWeread = prefs.resume && path !== undefined && !pulling && place === undefined;
   useEffect(() => {
     if (!askWeread || !path) return;
     let live = true;
@@ -125,7 +144,7 @@ export function App(): ReactElement {
     });
     return () => { live = false; };
   }, [askWeread, path?.bookId]);
-  const lookingUp = askWeread && inShell && wereadAt?.bookId !== path?.bookId;
+  const lookingUp = pulling || (askWeread && inShell && wereadAt?.bookId !== path?.bookId);
   const fromWeread = wereadAt?.bookId === path?.bookId ? wereadAt?.nodeId : undefined;
 
   // The stored station is the fallback, not an effect that sets state afterwards:
@@ -198,11 +217,22 @@ export function App(): ReactElement {
       })));
   }, [node, bookId, selection, prefs.locale, t.companion.busy]);
 
+  const loaded = useRef<Report | undefined>(undefined);
+  const settled = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(settled.current), [bookId]);
+
+  /** Leaving a book sends its place at once rather than at the next throttled tick. */
+  const sendPlace = useCallback((id: string | undefined) => {
+    const stored = id ? resume.placeFor(id) : undefined;
+    if (id && stored) pushPlace(id, toSynced(stored, Date.now()), true);
+  }, [resume]);
+
   /** Opening a book is what makes it the one to reopen next launch. */
   const openBook = useCallback((id: string) => {
+    if (id !== bookId) sendPlace(bookId);
     resume.open(id);
     setBookId(id);
-  }, [resume]);
+  }, [resume, bookId, sendPlace]);
 
   const onAdded = useCallback((entry: LibraryEntry) => {
     setBooks((b) => [entry, ...b.filter((x) => x.id !== entry.id)]);
@@ -222,12 +252,13 @@ export function App(): ReactElement {
   const goHome = useCallback(() => {
     // Going back to the shelf is deliberate, so the next launch opens there too.
     // The position inside each book is kept.
+    sendPlace(bookId);
     resume.close();
     setBookId(undefined);
     setCurrentId(undefined);
     if (chat.pendingTurn) void chatCancel(chat.pendingTurn);
     setChat(emptyCompanionView(''));
-  }, [resume, chat.pendingTurn]);
+  }, [resume, chat.pendingTurn, bookId, sendPlace]);
 
   const modal = (
     <>
@@ -331,7 +362,19 @@ export function App(): ReactElement {
           }
           if (prefs.autoNext) step(1);
         }}
-        onProgress={(ms) => resume.record(path.bookId, { nodeId: node.id, ms })}
+        onProgress={(ms) => {
+          const report = { bookId: path.bookId, nodeId: node.id, ms };
+          const moved = hasMoved(loaded.current, report);
+          loaded.current = loadedAt(loaded.current, report);
+          if (!moved) return;
+          const now = Date.now();
+          const at = { nodeId: node.id, ms, updatedAt: now };
+          resume.record(path.bookId, at);
+          pushPlace(path.bookId, toSynced(at, now));
+          // The deck reports while it plays and once as it stops, so silence after a report is a pause.
+          clearTimeout(settled.current);
+          settled.current = setTimeout(() => pushPlace(path.bookId, toSynced(at, now), true), SETTLE_MS);
+        }}
       />
 
       <Splitter split={right} label={t.panel.askPane} />

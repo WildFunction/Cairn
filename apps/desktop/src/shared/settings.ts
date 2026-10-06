@@ -146,6 +146,8 @@ export interface ShellSettingsValues {
   /** Whose WeChat Reading account the key came from, when a QR login stored it. Display only. */
   readonly wereadAccount: string;
   readonly trace: boolean;
+  /** Upload finished books to the owner's private iCloud, and keep the reader's place in step. */
+  readonly icloudSync: boolean;
 }
 
 export const DEFAULT_OPENAI_BASE_URL = 'https://api.openai.com/v1';
@@ -166,6 +168,8 @@ export const DEFAULT_SHELL_SETTINGS: ShellSettingsValues = {
   wereadKey: envRef(KEY_ENV.wereadKey),
   wereadAccount: '',
   trace: false,
+  // Off until asked for: turning it on sends books off this machine.
+  icloudSync: false,
 };
 
 function known(locale: ContentLocale, id: unknown): string | undefined {
@@ -295,6 +299,7 @@ export function parseSettings(
     wereadKey: str(raw.wereadKey, fallback.wereadKey),
     wereadAccount: str(raw.wereadAccount, fallback.wereadAccount),
     trace: typeof raw.trace === 'boolean' ? raw.trace : fallback.trace,
+    icloudSync: typeof raw.icloudSync === 'boolean' ? raw.icloudSync : fallback.icloudSync,
   };
 }
 

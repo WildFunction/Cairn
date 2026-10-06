@@ -2,6 +2,8 @@ import type { RPCSchema } from 'electrobun/view';
 import type { BudgetId } from '@cairn/core/pipeline/budget';
 import type { LibraryEntry } from '@cairn/core/store/library';
 import type { ChatSession } from '@cairn/core/companion/types';
+import type { CloudSyncStatus } from '@cairn/core/sync/auto';
+import type { SyncedPlace } from '@cairn/core/sync/progress';
 import type { CompanionEvent } from './companion-events';
 import type { ContentLocale, ModelStatus, ShellSettingsValues, UiLocale } from './settings';
 import type {
@@ -36,6 +38,17 @@ export type BunSchema = RPCSchema<{
     /** Build the book's failed stations again. */
     retryBook: { params: { bookId: string }; response: boolean };
     markBookFinished: { params: { bookId: string; nodeId: string }; response: boolean };
+    /* ---- the reader's place in iCloud; empty when the book is not there or iCloud cannot be reached ---- */
+    pullPlace: { params: { bookId: string }; response: SyncedPlace | null };
+    /** Throttled in the main process unless `force`. */
+    pushPlace: { params: { bookId: string; place: SyncedPlace; force: boolean }; response: null };
+    /* ---- which books are in iCloud; the switch itself is the `icloudSync` setting ---- */
+    cloudStatus: { params: void; response: CloudSyncStatus };
+    /** Off takes the book out of iCloud and keeps it out. */
+    cloudSetBook: { params: { bookId: string; on: boolean }; response: null };
+    cloudSyncNow: { params: void; response: null };
+    /** Switches syncing off and takes every book out of iCloud. */
+    cloudRemoveAll: { params: void; response: ShellSettingsValues };
     /* ---- WeChat Reading; each answers empty when no key is set ---- */
     wereadQuotes: { params: { title: string; author?: string }; response: readonly string[] };
     bookMeta: { params: { bookId: string }; response: BookMeta | null };
@@ -86,6 +99,8 @@ export type WebviewSchema = RPCSchema<{
   messages: {
     progress: Progress;
     deckStatus: DeckStatus;
+    /** An upload moving, or a book found removed from the phone. */
+    cloudStatus: CloudSyncStatus;
     companion: CompanionEvent;
     /** The native menu's Settings item, which the webview owns the panel for. */
     openSettings: null;

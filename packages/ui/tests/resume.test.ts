@@ -142,3 +142,12 @@ describe('forgetBook', () => {
     expect(forgetBook(store, 'never-opened-000000')).toEqual(store);
   });
 });
+
+describe('resume and iCloud', () => {
+  test('a place keeps when it was recorded, and an older store without it still reads', () => {
+    const s = remember(EMPTY_RESUME, 'b1', { nodeId: 'n3', ms: 42_000, updatedAt: 1_700 });
+    expect(placeIn(parseStored(JSON.stringify(s)), 'b1')).toEqual({ nodeId: 'n3', ms: 42_000, updatedAt: 1_700 });
+    expect(placeIn(parseStored('{"places":{"b1":{"nodeId":"n3","ms":5}}}'), 'b1')).toEqual({ nodeId: 'n3', ms: 5 });
+    expect(placeIn(parseStored('{"places":{"b1":{"nodeId":"n3","ms":5,"updatedAt":"x"}}}'), 'b1')).toEqual({ nodeId: 'n3', ms: 5 });
+  });
+});

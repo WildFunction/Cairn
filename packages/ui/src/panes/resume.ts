@@ -15,6 +15,8 @@ export interface Place {
   readonly nodeId: string;
   /** Audio offset inside that station. */
   readonly ms: number;
+  /** When it was recorded, in epoch ms, so iCloud's copy can be compared with it. Absent in older stores. */
+  readonly updatedAt?: number;
 }
 
 export interface ResumeStore {
@@ -69,14 +71,26 @@ function toPlace(value: unknown): Place | undefined {
   const p = value as { nodeId?: unknown; ms?: unknown };
   if (typeof p.nodeId !== 'string' || p.nodeId.length === 0) return undefined;
   const ms = Number(p.ms);
-  return { nodeId: p.nodeId, ms: Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0 };
+  const at = (p as { updatedAt?: unknown }).updatedAt;
+  return {
+    nodeId: p.nodeId,
+    ms: Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0,
+    ...(typeof at === 'number' && Number.isFinite(at) ? { updatedAt: at } : {}),
+  };
 }
 
 /** Record a position. Returns a new store; nothing is mutated. */
 export function remember(store: ResumeStore, bookId: string, place: Place): ResumeStore {
   return {
     lastBookId: bookId,
-    places: { ...store.places, [bookId]: { nodeId: place.nodeId, ms: Math.max(0, Math.round(place.ms)) } },
+    places: {
+      ...store.places,
+      [bookId]: {
+        nodeId: place.nodeId,
+        ms: Math.max(0, Math.round(place.ms)),
+        ...(place.updatedAt !== undefined ? { updatedAt: place.updatedAt } : {}),
+      },
+    },
   };
 }
 

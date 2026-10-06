@@ -7,6 +7,7 @@ import { useUi } from './SettingsProvider';
 import { TEXT_SIZES, THEMES, type TextSize, type ThemeChoice } from './prefs';
 import type { NarrationLanguage, ShellSettings } from './shell';
 import { Offline, Row, SecretField, Section, Segmented, Select, StackedRow, Switch } from './rows';
+import { CloudSection } from './CloudSection';
 
 const LOCALE_LABEL: Readonly<Record<Locale, string>> = {
   en: 'English (US)',
@@ -280,6 +281,8 @@ export function DataPage({ shell }: { shell?: ShellSettings }): ReactElement {
   };
 
   return (
+    <>
+    <CloudSection shell={shell} />
     <Section title={t.settings.pages.data}>
       <Row
         label={t.settings.data.location}
@@ -321,6 +324,7 @@ export function DataPage({ shell }: { shell?: ShellSettings }): ReactElement {
         )}
       </Row>
     </Section>
+    </>
   );
 }
 

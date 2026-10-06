@@ -76,6 +76,8 @@ export interface ShellPrefs {
   readonly wereadKey: string;
   readonly wereadAccount: string;
   readonly trace: boolean;
+  /** Upload finished books to the owner's iCloud and keep the reader's place in step. */
+  readonly icloudSync: boolean;
 }
 
 export type WereadLoginFailure = 'expired' | 'otp_expired' | 'no_skill' | 'rejected' | 'network';
@@ -104,6 +106,30 @@ export interface VoiceOption {
   readonly label: string;
 }
 
+/** One book as the iCloud section lists it. */
+export interface CloudBookRow {
+  readonly id: string;
+  readonly title: string;
+  /** What it takes in iCloud, and again on the phone. */
+  readonly bytes: number;
+  readonly state: 'synced' | 'waiting' | 'uploading' | 'off' | 'building' | 'failed';
+  readonly done?: number;
+  readonly total?: number;
+}
+
+/** iCloud as the settings panel sees it. The switch itself is `prefs.icloudSync`. */
+export interface CloudPanel {
+  /** Whether iCloud can be used from this build and this account at all. */
+  readonly reach: 'ready' | 'no_helper' | 'no_account' | 'restricted' | 'unknown';
+  readonly running: boolean;
+  readonly books: readonly CloudBookRow[];
+  /** Off takes the book out of iCloud and keeps it out. */
+  readonly setBook: (bookId: string, on: boolean) => void;
+  readonly syncNow: () => void;
+  /** Switches syncing off and removes every book from iCloud. */
+  readonly removeAll: () => Promise<void>;
+}
+
 export interface ShellSettings {
   readonly prefs: ShellPrefs;
   readonly setPref: <K extends keyof ShellPrefs>(key: K, value: ShellPrefs[K]) => void;
@@ -128,4 +154,6 @@ export interface ShellSettings {
   readonly revealDataDir: () => void;
   readonly clearCache: () => Promise<void>;
   readonly weread: WereadAccount;
+  /** Absent until the main process has answered. */
+  readonly cloud?: CloudPanel;
 }

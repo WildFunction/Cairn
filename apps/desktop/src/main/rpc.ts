@@ -1,5 +1,8 @@
 import { openExternal, openFileDialog } from 'electrobun/main/utils';
 import type { BookBuilder } from '@cairn/core/books/builder';
+import type { AutoSync, CloudSyncStatus } from '@cairn/core/sync/auto';
+import type { PositionSync } from '@cairn/core/sync/position';
+import type { SyncedPlace } from '@cairn/core/sync/progress';
 import type { Weread } from './weread/service';
 import type { WereadLogin } from './weread/login';
 import type { LoginStep } from '../shared/weread-login';
@@ -42,6 +45,8 @@ const message = (cause: unknown): string =>
 /** What the handlers need from the rest of the process, assembled once in `index.ts`. */
 export interface HandlerDeps {
   readonly books: BookBuilder;
+  readonly position: PositionSync;
+  readonly cloudSync: AutoSync;
   readonly weread: Weread;
   readonly wereadLogin: WereadLogin;
   readonly devBuild: boolean;
@@ -54,7 +59,7 @@ export interface HandlerDeps {
   };
 }
 
-export function createHandlers({ books, weread, wereadLogin, devBuild, menu, emit }: HandlerDeps) {
+export function createHandlers({ books, position, cloudSync, weread, wereadLogin, devBuild, menu, emit }: HandlerDeps) {
   /** One reader, one conversation: a second send while a turn runs is refused. */
   let activeChat: { readonly turnId: string; readonly controller: AbortController } | undefined;
 
@@ -168,6 +173,37 @@ export function createHandlers({ books, weread, wereadLogin, devBuild, menu, emi
       return null;
     },
 
+    async pullPlace({ bookId }: { bookId: string }): Promise<SyncedPlace | null> {
+      if (!isBookId(bookId)) return null;
+      return (await position.pull(bookId)) ?? null;
+    },
+
+    pushPlace({ bookId, place, force }: { bookId: string; place: SyncedPlace; force: boolean }): null {
+      if (isBookId(bookId)) void position.push(bookId, place, force);
+      return null;
+    },
+
+    async cloudStatus(): Promise<CloudSyncStatus> {
+      return cloudSync.status();
+    },
+
+    cloudSetBook({ bookId, on }: { bookId: string; on: boolean }): null {
+      if (isBookId(bookId)) void cloudSync.setBook(bookId, on).catch(quietly('cloudSetBook', undefined));
+      return null;
+    },
+
+    cloudSyncNow(): null {
+      void cloudSync.run().catch(quietly('cloudSyncNow', undefined));
+      return null;
+    },
+
+    async cloudRemoveAll(): Promise<ShellSettingsValues> {
+      // Off first: a run still going would otherwise put back what this takes out.
+      const stored = await writeSettings({ icloudSync: false });
+      await cloudSync.removeAll();
+      return stored;
+    },
+
     async markBookFinished(params: { bookId: string; nodeId: string }): Promise<boolean> {
       return markBookFinished(params.bookId, params.nodeId);
     },
@@ -219,6 +255,7 @@ export function createHandlers({ books, weread, wereadLogin, devBuild, menu, emi
       try {
         const removed = await books.remove(params.bookId);
         if (!removed) throw new CairnError('book_not_listed', { id: params.bookId });
+        void cloudSync.forget(params.bookId).catch(quietly('cloudSync.forget', undefined));
         return true;
       } catch (cause) {
         // The terminal gets the stack; the reader gets a code the player words.
@@ -235,7 +272,10 @@ export function createHandlers({ books, weread, wereadLogin, devBuild, menu, emi
     },
 
     async setSettings(patch: Partial<ShellSettingsValues>): Promise<ShellSettingsValues> {
-      return writeSettings(patch);
+      const stored = await writeSettings(patch);
+      // On starts the upload; off only needs the panel told, and a run with the switch off does just that.
+      if (patch.icloudSync !== undefined) void cloudSync.run().catch(quietly('cloudSync.run', undefined));
+      return stored;
     },
 
     async devBuild(): Promise<boolean> {

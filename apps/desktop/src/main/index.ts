@@ -8,7 +8,10 @@
  */
 import { ApplicationMenu, BrowserView, BrowserWindow, Updater } from 'electrobun/main';
 import { createBookBuilder } from '@cairn/core/books/builder';
-import { edgeTtsNarrator } from '@cairn/core/runtime';
+import { cloudKitStore, edgeTtsNarrator } from '@cairn/core/runtime';
+import { createAutoSync } from '@cairn/core/sync/auto';
+import { createPositionSync } from '@cairn/core/sync/position';
+import { readBookSource } from '@cairn/core/store/book-source';
 import { createHandlers } from './rpc';
 import { installMenu, OPEN_SETTINGS, OPEN_INSPECTOR } from './menu';
 import { providerFor } from './provider';
@@ -16,6 +19,8 @@ import { effectiveWereadKey, readSettings, writeSettings } from './settings';
 import { createWeread } from './weread/service';
 import { createWereadLogin } from './weread/login';
 import { library } from './store';
+import { installedSyncHelper } from './sync-helper';
+import { syncedBytes, syncLedger } from './cloud-sync';
 import { voiceFor, type UiLocale } from '../shared/settings';
 import type { CairnRPC } from '../shared/schema';
 
@@ -45,14 +50,41 @@ menu();
 // handlers do; these are only ever called after that.
 const send = (): typeof rpc.send => rpc.send;
 
+const cloud = (): ReturnType<typeof cloudKitStore> | undefined => {
+  const helper = installedSyncHelper();
+  return helper ? cloudKitStore(helper) : undefined;
+};
+
+const cloudSync = createAutoSync({
+  cloud,
+  enabled: async () => (await readSettings()).icloudSync,
+  books: () => library.list(),
+  source: (entry) => readBookSource(library, entry),
+  sizeOf: syncedBytes,
+  ledger: syncLedger,
+  onStatus: (status) => send().cloudStatus(status),
+  log: (what, cause) => console.error(what, cause),
+});
+
 const books = createBookBuilder({
   library,
   narrator: edgeTtsNarrator(),
   providerFor,
   voiceFor: async (language) => voiceFor(await readSettings(), language).voice,
   // Stations keep arriving after the progress modal has closed
-  onDeckStatus: (status) => send().deckStatus(status),
+  onDeckStatus: (status) => {
+    send().deckStatus(status);
+    // A book that has just finished is a book to upload
+    if (status.complete) void cloudSync.run();
+  },
   onDeckFailed: (bookId, nodeId, error) => console.error('deck failed', bookId, nodeId, error),
+});
+
+const position = createPositionSync({
+  cloud,
+  allows: cloudSync.allows,
+  now: Date.now,
+  log: (what, cause) => console.error(what, cause),
 });
 
 const weread = createWeread({
@@ -66,6 +98,8 @@ const wereadLogin = createWereadLogin({
 
 const handlers = createHandlers({
   books,
+  position,
+  cloudSync,
   weread,
   wereadLogin,
   devBuild,
@@ -91,3 +125,6 @@ const mainWindow = new BrowserWindow({
   frame: { width: 1400, height: 900, x: 80, y: 60 },
   rpc,
 });
+
+// Catch up on anything finished, switched or removed while the app was closed
+void cloudSync.run();

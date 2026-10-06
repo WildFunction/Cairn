@@ -32,6 +32,7 @@ describe('parseSettings', () => {
       wereadKey: 'wrk-x',
       wereadAccount: '读者',
       trace: true,
+      icloudSync: true,
     };
     expect(parseSettings(stored)).toEqual(stored);
   });
