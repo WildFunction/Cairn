@@ -4,7 +4,7 @@ import { toCaptions } from '@cairn/core/pipeline/caption';
 import type { NodeDeck, PathNode } from '@cairn/core/types';
 import { useNarration } from '../audio/useNarration';
 import { SlideView } from '../slides/SlideView';
-import { lastIndexAtOrBefore, LEAD_MS } from '../slides/reveal';
+import { frameAt } from '../slides/frame';
 import { BoostBadge } from './BoostBadge';
 import { FastMark, FullscreenMark, PauseMark, PlayMark, VolumeMark } from './icons';
 import { useUi } from '../settings/SettingsProvider';
@@ -162,23 +162,8 @@ export function DeckPane({
     );
   }
 
-  // Everything on screen is read at the lead, never at the raw audio position.
-  const at = ms + LEAD_MS;
-  const slideIdx = lastIndexAtOrBefore(deck.slides.map((s) => s.atMs), at);
-  // Between captions there is no exact hit, so hold the last one that started
-  const capIdx = lastIndexAtOrBefore(captions.map((c) => c.startMs), at);
-  const slide = deck.slides[slideIdx];
-  const caption = captions[capIdx];
-
-  // Items arrive when the voice names them, so a card is never still absent
-  // after the sentence that introduced it. Derived from audio time like
-  // everything else on screen, so a scrub backwards folds the slide up again.
-  const reveal = {
-    cues: captions,
-    spanStartMs: slide?.atMs ?? 0,
-    spanEndMs: deck.slides[slideIdx + 1]?.atMs ?? deck.durationMs,
-    ms: at,
-  };
+  // The same arithmetic the phone's slide page uses — see slides/frame.ts.
+  const { slideIdx, slide, captionIdx: capIdx, caption, reveal } = frameAt(deck, captions, ms);
 
   // Clicking the slide is the transport. A deck plays like a video, so the frame
   // itself is the pause target; a 38px button below it was the wrong place to aim.

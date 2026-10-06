@@ -71,6 +71,18 @@ export function SettingsProvider({
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/**
+ * The copy for one locale, for a surface with no settings of its own — the
+ * phone's slide page is told its locale by the app around it and stores nothing.
+ */
+export function FixedLocale({ locale, children }: { locale: Locale; children: ReactNode }): ReactElement {
+  const value = useMemo<UiSettings>(
+    () => ({ prefs: { ...DEFAULT_PREFS, locale }, setPref: () => undefined, t: messagesFor(locale), locale }),
+    [locale],
+  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
 export function useUi(): UiSettings {
   const value = useContext(Ctx);
   if (!value) throw new Error('useUi must be used inside <SettingsProvider>');
