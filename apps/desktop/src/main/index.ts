@@ -6,6 +6,7 @@
  * The renderer cannot spawn processes, so everything touching the model, the
  * file system or the network lives in this process and is reached over RPC.
  */
+import { join } from 'node:path';
 import { ApplicationMenu, BrowserView, BrowserWindow, Updater } from 'electrobun/main';
 import { createBookBuilder } from '@cairn/core/books/builder';
 import { cloudKitStore, edgeTtsNarrator } from '@cairn/core/runtime';
@@ -18,9 +19,9 @@ import { providerFor } from './provider';
 import { effectiveWereadKey, readSettings, writeSettings } from './settings';
 import { createWeread } from './weread/service';
 import { createWereadLogin } from './weread/login';
-import { library } from './store';
+import { DATA_DIR, library } from './store';
 import { installedSyncHelper } from './sync-helper';
-import { syncedBytes, syncLedger } from './cloud-sync';
+import { ledgerName, syncedBytes, syncLedger } from './cloud-sync';
 import { voiceFor, type UiLocale } from '../shared/settings';
 import type { CairnRPC } from '../shared/schema';
 
@@ -61,7 +62,7 @@ const cloudSync = createAutoSync({
   books: () => library.list(),
   source: (entry) => readBookSource(library, entry),
   sizeOf: syncedBytes,
-  ledger: syncLedger,
+  ledger: syncLedger(join(DATA_DIR, ledgerName(devBuild))),
   onStatus: (status) => send().cloudStatus(status),
   log: (what, cause) => console.error(what, cause),
 });

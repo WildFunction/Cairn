@@ -9,31 +9,39 @@ import { EMPTY_LEDGER, parseLedger, type SyncLedger } from '@cairn/core/sync/aut
 import { bookDir, type LibraryEntry } from '@cairn/core/store/library';
 import { DATA_DIR } from './store';
 
-const LEDGER = join(DATA_DIR, 'sync.json');
+/**
+ * A development build's helper writes to CloudKit's Development environment and a release's to
+ * Production. A shared ledger would make each read the other's uploads as removed from iCloud.
+ */
+export function ledgerName(devBuild: boolean): string {
+  return devBuild ? 'sync.development.json' : 'sync.production.json';
+}
 
-export const syncLedger = {
-  async read(): Promise<SyncLedger> {
-    let raw: string;
-    try {
-      raw = await readFile(LEDGER, 'utf8');
-    } catch (cause) {
-      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') return EMPTY_LEDGER;
-      throw cause;
-    }
-    try {
-      return parseLedger(JSON.parse(raw));
-    } catch {
-      // Unreadable is the same as empty: the next run finds what is in iCloud again.
-      return EMPTY_LEDGER;
-    }
-  },
+export function syncLedger(file: string): { read(): Promise<SyncLedger>; write(next: SyncLedger): Promise<void> } {
+  return {
+    async read() {
+      let raw: string;
+      try {
+        raw = await readFile(file, 'utf8');
+      } catch (cause) {
+        if ((cause as NodeJS.ErrnoException).code === 'ENOENT') return EMPTY_LEDGER;
+        throw cause;
+      }
+      try {
+        return parseLedger(JSON.parse(raw));
+      } catch {
+        // Unreadable is the same as empty: the next run finds what is in iCloud again.
+        return EMPTY_LEDGER;
+      }
+    },
 
-  async write(next: SyncLedger): Promise<void> {
-    const pending = `${LEDGER}.${randomUUID()}.tmp`;
-    await writeFile(pending, JSON.stringify(next));
-    await rename(pending, LEDGER);
-  },
-};
+    async write(next) {
+      const pending = `${file}.${randomUUID()}.tmp`;
+      await writeFile(pending, JSON.stringify(next));
+      await rename(pending, file);
+    },
+  };
+}
 
 async function bytesIn(directory: string, keep: (name: string) => boolean): Promise<number> {
   let names: string[];
