@@ -86,12 +86,40 @@ jobs:
           echo "ELECTROBUN_DEVELOPER_ID=$IDENTITY" >> "$GITHUB_ENV"
           echo "ELECTROBUN_TEAMID=$(printf '%s' "$IDENTITY" | sed -n 's/.*(\([A-Z0-9]\{10\}\))$/\1/p')" >> "$GITHUB_ENV"
 
+      # iCloud is a restricted entitlement: the sync helper only launches with the profile granting it embedded.
+      - name: Write out the sync helper's provisioning profile
+        env:
+          MACOS_SYNC_PROFILE: ${{ secrets.MACOS_SYNC_PROFILE }}
+        run: |
+          if [ -z "$MACOS_SYNC_PROFILE" ]; then
+            echo "::error::MACOS_SYNC_PROFILE is not set: the Developer ID provisioning profile for dev.jasper.cairn.sync, base64-encoded"
+            exit 1
+          fi
+          printf '%s' "$MACOS_SYNC_PROFILE" | base64 --decode > "$RUNNER_TEMP/CairnSync.provisionprofile"
+          echo "CAIRN_SYNC_PROFILE=$RUNNER_TEMP/CairnSync.provisionprofile" >> "$GITHUB_ENV"
+
+      # scripts/signing shadows codesign so the packager leaves the helper's own signature alone.
       - name: Package
         working-directory: apps/desktop
         env:
           ELECTROBUN_APPLEID: ${{ secrets.APPLE_ID }}
           ELECTROBUN_APPLEIDPASS: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: bun run package
+        run: PATH="$PWD/scripts/signing:$PATH" bun run package
+
+      # Re-signed by the packager, the helper loses its iCloud entitlement and the build still passes.
+      - name: Check the app carries a helper entitled to iCloud
+        run: |
+          mkdir "$RUNNER_TEMP/app"
+          zstd -dc apps/desktop/artifacts/stable-macos-arm64-Cairn.app.tar.zst | tar -x -C "$RUNNER_TEMP/app"
+          HELPER="$RUNNER_TEMP/app/Cairn.app/Contents/Helpers/CairnSync.app"
+          codesign --verify --strict "$HELPER"
+          ENTITLEMENTS="$(codesign -d --entitlements - --xml "$HELPER" | plutil -convert json -o - -)"
+          echo "$ENTITLEMENTS"
+          ENVIRONMENT="$(printf '%s' "$ENTITLEMENTS" | jq -r '."com.apple.developer.icloud-container-environment"')"
+          if [ "$ENVIRONMENT" != "Production" ]; then
+            echo "::error::the packaged sync helper is not entitled to CloudKit's Production environment"
+            exit 1
+          fi
 
       - name: Name the installer
         env:

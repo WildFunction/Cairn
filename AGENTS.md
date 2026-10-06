@@ -29,8 +29,9 @@ cd apps/desktop
 bun run dev       # Vite only: the three panes, no model, no shell
 bun run build     # bundle the webview — catches node:* leaking into it
 bun run start     # the real desktop app
-bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity
-bun run sync-helper   # the Swift helper that talks to CloudKit; needs Xcode signed in to the team
+bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity;
+                  # with CAIRN_SYNC_PROFILE and scripts/signing first on PATH it carries the iCloud helper
+bun run sync-helper   # the Swift helper a development build uses; needs Xcode signed in to the team
 
 bun run ios:sample   # export the built-in book from the library into the iOS app (git-ignored)
 bun run ios:stage    # build the iOS app's slide page (git-ignored)
@@ -359,7 +360,9 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
   and nowhere else. `chapters.json` and `notes.json` never go: `sync/book.ts` is not handed them.
   Nothing is uploaded until the owner turns on `icloudSync` in settings (off by default) or runs
   `bun run sync-book`. A book switched off there, or removed on the phone, is taken out of iCloud
-  and recorded in `sync.json` beside the library so it is not uploaded again.
+  and recorded in the sync ledger beside the library (`sync.production.json`; a development build
+  writes to CloudKit's Development environment and keeps `sync.development.json`) so it is not
+  uploaded again.
 - **The reader's place travels too, for a book in iCloud.** A `Progress` record in the book's zone
   holds the station, the second, when, and which kind of device (`Mac`, `iPhone`). The phone and
   the Mac each write it and the newer one wins. Nothing is written for a book that was never
@@ -383,9 +386,9 @@ accounts · telemetry · any networked server component.
 
 **Planned, and the reason several decisions look the way they do:** books generated on the Mac
 sync (iCloud) and are read on an iPhone. The upload (`sync/`, from the settings switch or
-`bun run sync-book`), the phone app (`apps/ios`) and the place syncing both ways exist; shipping
-the helper inside the packaged app does not — until then the Mac's side of sync works in a
-development build only, and the switch says so elsewhere. Four consequences bind:
+`bun run sync-book`), the phone app (`apps/ios`) and the place syncing both ways exist, and the
+packaged Mac app carries the helper, signed for CloudKit's Production environment
+([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), "Shipping the helper"). Four consequences bind:
 
 1. **The phone can only be a player.** An iOS app ships through the App Store, so it *is*
    sandboxed: no subprocess, no `codex`. Generation stays on the Mac. This is

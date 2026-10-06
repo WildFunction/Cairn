@@ -398,12 +398,40 @@ The place is merged by one rule written twice and tested against one table: the 
 `updatedAt` wins, and on a tie the one further along the path.
 
 Which books are in iCloud is decided on the Mac (`sync/auto.ts`), from the `icloudSync` setting
-and a small ledger, `sync.json`: the books this Mac uploaded, the books its owner switched
+and a small ledger, `sync.production.json`: the books this Mac uploaded, the books its owner switched
 off, and the ones switched off whose copy in iCloud is still to be removed — chosen while syncing
 was off, or while offline — which the next run takes out. A removal on the phone deletes the book's zone and nothing else; the Mac tells it from a
 book never uploaded by the ledger — uploaded from here, gone from there — and switches the book
 off rather than uploading it again. That is why a place is saved with `createZone: false`: a
 place must never bring back a zone its book was removed from.
+
+#### Shipping the helper
+
+iCloud is a restricted entitlement: macOS launches a process that claims it only when the bundle
+embeds a provisioning profile granting it. So the helper is its own signed app,
+`Cairn.app/Contents/Helpers/CairnSync.app`, found from the main process's executable
+(`main/sync-helper.ts`). Two builds of it exist and they reach different databases:
+
+- **A development build** uses the one `bun run sync-helper` builds in the repository, signed by
+  Xcode with a development profile. It talks to CloudKit's **Development** environment.
+- **A packaged app** carries one built by the `postBuild` hook, `scripts/embed-sync-helper.ts`,
+  signed with the Developer ID certificate, `CairnSync.release.entitlements` and the Developer ID
+  profile named by `CAIRN_SYNC_PROFILE`. It talks to **Production**, which is also where an App
+  Store build of the phone app reads.
+
+Because the two environments hold different books, each build keeps its own ledger
+(`sync.development.json`, `sync.production.json`). One shared file made the release read every
+book the development build had uploaded as "uploaded from here, gone from there" and switch it off.
+
+Electrobun's packager signs every Mach-O it finds in the bundle with the app's own entitlements,
+wherever the file sits and whatever it is called, and offers no way to exclude one. Left alone it
+re-signs the helper and strips the iCloud entitlement without failing the build. It finds
+`codesign` on `PATH`, so `scripts/signing/codesign` goes first there while packaging: it does
+nothing when asked to sign something inside `Contents/Helpers/CairnSync.app` and hands every other
+call to `/usr/bin/codesign`. The hook refuses to run without it, and `release.yml` reads the
+entitlements back from the packaged app before publishing. Rejected: shipping the helper as an
+archive and unpacking it at first use (a second copy outside the bundle to keep current and to
+clean up), and signing the whole app ourselves instead of letting the packager do it.
 
 ### Superseded, and why it is worth knowing
 

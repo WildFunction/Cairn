@@ -1,0 +1,11 @@
+#!/bin/sh
+# Electrobun's packager re-signs every Mach-O in the bundle with the app's own entitlements,
+# which strips the iCloud entitlement scripts/embed-sync-helper.ts signed the helper with.
+# First on PATH while packaging, this leaves the helper's signature alone and hands every
+# other call to the real codesign.
+for target; do :; done
+case "$target" in
+  */Contents/Helpers/CairnSync.app | */Contents/Helpers/CairnSync.app/*)
+    case " $* " in *" --sign "*) exit 0 ;; esac ;;
+esac
+exec /usr/bin/codesign "$@"

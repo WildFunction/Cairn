@@ -318,7 +318,7 @@ export const zh: Messages = {
       sync: '在 iCloud 同步数据',
       syncHint: '生成完的书会上传到你的私有 iCloud，iPhone 上的 Cairn 就能播放，读到哪里也会两边同步。书的正文不会离开这台 Mac。',
       reach: {
-        no_helper: '这个版本还没带 iCloud 助手。先运行 `bun run sync-helper`，再用开发版打开。',
+        no_helper: '这个版本没有 iCloud 助手。iCloud 同步需要 macOS 版；开发版要先运行 `bun run sync-helper`。',
         no_account: '先在系统设置里登录 iCloud。',
         restricted: '这台 Mac 的 iCloud 受限。',
         unknown: '暂时连不上 iCloud。',

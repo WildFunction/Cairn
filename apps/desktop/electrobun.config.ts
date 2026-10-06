@@ -24,4 +24,5 @@ export default {
     mac: { bundleCEF: false, icons: 'icon.iconset', codesign: signed, notarize: notarized },
     win: { icon: 'icon.iconset/icon_256x256.png' },
   },
+  scripts: { postBuild: 'scripts/embed-sync-helper.ts' },
 } satisfies ElectrobunConfig;

@@ -330,7 +330,7 @@ export const en = {
       sync: 'Sync books to iCloud',
       syncHint: 'Finished books upload to your private iCloud so Cairn on the iPhone can play them, and your place travels both ways. A book\'s text never leaves this Mac.',
       reach: {
-        no_helper: 'This build has no iCloud helper yet. Run `bun run sync-helper`, then open a development build.',
+        no_helper: 'This build has no iCloud helper. iCloud sync needs the macOS app; a development build needs `bun run sync-helper` first.',
         no_account: 'Sign in to iCloud in System Settings first.',
         restricted: 'iCloud is restricted on this Mac.',
         unknown: 'iCloud cannot be reached right now.',

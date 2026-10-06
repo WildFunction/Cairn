@@ -1,12 +1,21 @@
 import { expect, test } from 'bun:test';
-import { syncHelperPath } from '../../src/main/sync-helper';
+import { syncHelperPaths } from '../../src/main/sync-helper';
 
-test('a development build finds the helper beside it in the repository', () => {
-  expect(syncHelperPath('/r/cairn/apps/desktop/build/dev-macos-arm64/Cairn-dev.app/Contents/MacOS/cottontail', {}))
-    .toBe('/r/cairn/apps/desktop/sync-helper/build/Build/Products/Debug/CairnSync.app/Contents/MacOS/CairnSync');
+const IN_BUNDLE = 'Contents/Helpers/CairnSync.app/Contents/MacOS/CairnSync';
+
+test('a packaged app uses the helper inside its own bundle', () => {
+  expect(syncHelperPaths('/Applications/Cairn.app/Contents/MacOS/cottontail', {}))
+    .toEqual([`/Applications/Cairn.app/${IN_BUNDLE}`]);
 });
 
-test('an installed app has none unless one is named', () => {
-  expect(syncHelperPath('/Applications/Cairn.app/Contents/MacOS/cottontail', {})).toBeUndefined();
-  expect(syncHelperPath('/Applications/Cairn.app/Contents/MacOS/cottontail', { CAIRN_SYNC_HELPER: '/h' })).toBe('/h');
+test('a development build falls back to the helper built in the repository', () => {
+  expect(syncHelperPaths('/r/cairn/apps/desktop/build/dev-macos-arm64/Cairn-dev.app/Contents/MacOS/cottontail', {}))
+    .toEqual([
+      `/r/cairn/apps/desktop/build/dev-macos-arm64/Cairn-dev.app/${IN_BUNDLE}`,
+      '/r/cairn/apps/desktop/sync-helper/build/Build/Products/Debug/CairnSync.app/Contents/MacOS/CairnSync',
+    ]);
+});
+
+test('a helper named in the environment is the only one tried', () => {
+  expect(syncHelperPaths('/Applications/Cairn.app/Contents/MacOS/cottontail', { CAIRN_SYNC_HELPER: '/h' })).toEqual(['/h']);
 });
