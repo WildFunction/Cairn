@@ -1,0 +1,33 @@
+{
+  "originHash" : "2220893b759905604972d7a88279db3b0f564cf89169925aa1a63a82bf6dd220",
+  "pins" : [
+    {
+      "identity" : "lookinserver",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/QMUI/LookinServer",
+      "state" : {
+        "revision" : "e553d1b689d147817dc54ad5c28fcff71e860101",
+        "version" : "1.2.8"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    },
+    {
+      "identity" : "swiftaudioex",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/doublesymmetry/SwiftAudioEx",
+      "state" : {
+        "revision" : "7b506bebabd68b542256c0e1e55519fab5f4c092",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

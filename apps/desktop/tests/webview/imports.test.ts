@@ -4,12 +4,15 @@ import { dirname, join, resolve } from 'node:path';
 import { builtinModules } from 'node:module';
 
 /**
- * Walks the webview's real import graph from its entry. A `node:*` import that
- * reaches the renderer passes every typecheck and fails only at bundle time;
+ * Walks each webview's real import graph from its entry. A `node:*` import that
+ * reaches a renderer passes every typecheck and fails only at bundle time;
  * a heavy main-process dependency passes the bundle too and just ships.
  */
 const ROOT = resolve(import.meta.dirname, '../../../..');
-const ENTRY = join(ROOT, 'apps/desktop/src/main.tsx');
+const ENTRIES = [
+  { name: 'the desktop webview', file: join(ROOT, 'apps/desktop/src/main.tsx') },
+  { name: "the iOS app's slide page", file: join(ROOT, 'apps/ios/stage/main.tsx') },
+];
 const CORE = join(ROOT, 'packages/core/src');
 const UI = join(ROOT, 'packages/ui/src/index.ts');
 
@@ -34,11 +37,11 @@ function isNodeBuiltin(spec: string): boolean {
   return spec.startsWith('node:') || builtinModules.includes(spec);
 }
 
-/** Every external specifier the renderer reaches, with the file that reached it. */
-function walk(): ReadonlyMap<string, string> {
+/** Every external specifier a renderer reaches, with the file that reached it. */
+function walk(entry: string): ReadonlyMap<string, string> {
   const externals = new Map<string, string>();
   const seen = new Set<string>();
-  const queue = [ENTRY];
+  const queue = [entry];
   while (queue.length > 0) {
     const file = queue.pop()!;
     if (seen.has(file) || /\.(css|svg|png)$/.test(file)) continue;
@@ -54,8 +57,8 @@ function walk(): ReadonlyMap<string, string> {
   return externals;
 }
 
-describe('the webview import graph', () => {
-  const externals = walk();
+describe.each(ENTRIES)('the import graph of $name', ({ file }) => {
+  const externals = walk(file);
   const offending = (pred: (spec: string) => boolean): string[] =>
     [...externals].filter(([spec]) => pred(spec)).map(([spec, from]) => `${spec} ← ${from}`);
 

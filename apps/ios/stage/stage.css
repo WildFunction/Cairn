@@ -1,0 +1,29 @@
+@import '../../../packages/ui/src/tokens.css';
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; overflow: hidden; background: #211e18; }
+
+body {
+  /* The desktop's body font (app.css), which every slide rule inherits from. */
+  font: 15px/1.55 -apple-system, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI',
+        'Microsoft YaHei', system-ui, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The web view is already 16:9 and already clipped, so the stage simply fills it. */
+.slide-stage { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; }
+
+/* A caption enlarged for the small frame needs the width a desktop caption leaves as margin. */
+.slide-stage.scaled .slide-caption { left: 3cqw; right: 3cqw; }
+.slide-stage.scaled .slide-caption p { line-height: 1.4; }
+
+/* The native controls are up: the caption moves clear of the time and the scrubber. */
+.slide-stage.lifted .slide-caption { bottom: 11.6cqw; }
+
+/* The controls' top row sits where the slide's own station tag and dots are; two labels on one line read as neither. */
+.slide-stage.lifted .s-chrome { opacity: 0; }

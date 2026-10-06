@@ -29,6 +29,22 @@
         "vite": "^6.0.0",
       },
     },
+    "apps/ios": {
+      "name": "@cairn/ios",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cairn/core": "workspace:*",
+        "@cairn/ui": "workspace:*",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.3.4",
+        "vite": "^6.0.0",
+      },
+    },
     "packages/core": {
       "name": "@cairn/core",
       "version": "0.0.0",
@@ -143,6 +159,8 @@
     "@cairn/core": ["@cairn/core@workspace:packages/core"],
 
     "@cairn/desktop": ["@cairn/desktop@workspace:apps/desktop"],
+
+    "@cairn/ios": ["@cairn/ios@workspace:apps/ios"],
 
     "@cairn/ui": ["@cairn/ui@workspace:packages/ui"],
 

@@ -1,0 +1,128 @@
+# The Xcode project is generated from this file: `cd apps/ios && xcodegen`.
+# Edit here, not in Cairn.xcodeproj.
+name: Cairn
+options:
+  deploymentTarget:
+    iOS: "18.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: DVKY3N289Q
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  CairnKit:
+    path: CairnKit
+  SnapKit:
+    url: https://github.com/SnapKit/SnapKit
+    from: 5.7.1
+  SwiftAudioEx:
+    url: https://github.com/doublesymmetry/SwiftAudioEx
+    from: 1.1.0
+  # Compiles to nothing outside Debug: its Package.swift defines SHOULD_COMPILE_LOOKIN_SERVER for that configuration only.
+  LookinServer:
+    url: https://github.com/QMUI/LookinServer
+    from: 1.2.8
+
+schemes:
+  Cairn:
+    build:
+      targets:
+        Cairn: all
+        CairnUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CairnUITests
+    archive:
+      config: Release
+
+targets:
+  CairnUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - CairnUITests
+    dependencies:
+      - target: Cairn
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.jasper.cairn.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Cairn
+        TARGETED_DEVICE_FAMILY: "1"
+  Cairn:
+    type: application
+    platform: iOS
+    sources:
+      - path: Cairn
+        excludes:
+          - Resources/Stage
+          - Resources/SampleBook
+      # Folder references: both are trees whose file names repeat (n0.json, n0.mp3), so they cannot be flattened.
+      - path: Cairn/Resources/Stage
+        type: folder
+        buildPhase: resources
+        optional: true
+      - path: Cairn/Resources/SampleBook
+        type: folder
+        buildPhase: resources
+        optional: true
+    dependencies:
+      - package: CairnKit
+      - package: SnapKit
+      - package: SwiftAudioEx
+      - package: LookinServer
+    preBuildScripts:
+      - name: Check generated resources
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ ! -f "$SRCROOT/Cairn/Resources/SampleBook/books/the-art-of-war-ed02db/manifest.json" ]; then
+            echo "error: The built-in book is missing. Run 'bun run ios:sample' from the repository root."
+            exit 1
+          fi
+          if [ ! -f "$SRCROOT/Cairn/Resources/Stage/index.html" ]; then
+            echo "error: The slide page is missing. Run 'bun run ios:stage' from the repository root."
+            exit 1
+          fi
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.jasper.cairn
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: Cairn/Cairn.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Cairn/Info.plist
+      properties:
+        CFBundleDisplayName: Cairn
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        CFBundleLocalizations:
+          - en
+          - zh-Hans
+        ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - audio
+          - remote-notification
+        # A build made with CODE_SIGNING_ALLOWED=NO carries no iCloud entitlement, and CloudKit
+        # traps the moment such an app names a container. This says which kind of build it is.
+        CairnSigned: $(CODE_SIGNING_ALLOWED)
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate

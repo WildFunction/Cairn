@@ -11,6 +11,9 @@
     "typecheck": "bun scripts/typecheck.ts",
     "add-book": "bun scripts/add-book.ts",
     "replay": "bun scripts/replay.ts",
+    "sync-book": "bun scripts/sync-book.ts",
+    "ios:sample": "bun scripts/export-ios-sample.ts",
+    "ios:stage": "bun run --cwd apps/ios stage",
     "eval": "bun scripts/eval.ts"
   },
   "devDependencies": {

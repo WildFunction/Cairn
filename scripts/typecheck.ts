@@ -3,7 +3,7 @@
  * Typecheck every package, and say so when one cannot be checked.
  *
  * The root script used to point at `packages/core` alone while the docs claimed
- * four clean typechecks. The two desktop projects extend a tsconfig that
+ * every project was clean. The two desktop projects extend a tsconfig that
  * `electrobun prepare` projects into `apps/desktop/.hutch/`, which is gitignored
  * — so on a fresh checkout they cannot run at all. Silently checking one of four
  * hid that; skipping loudly does not.
@@ -29,6 +29,7 @@ const PROJECTS: readonly Project[] = [
   { name: 'ui', config: 'packages/ui/tsconfig.json' },
   { name: 'desktop (webview)', config: 'apps/desktop/tsconfig.json', needs: DEVKIT },
   { name: 'desktop (main)', config: 'apps/desktop/tsconfig.main.json', needs: DEVKIT },
+  { name: 'ios (stage)', config: 'apps/ios/stage/tsconfig.json' },
 ];
 
 let failed = 0;
