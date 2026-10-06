@@ -98,10 +98,15 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Cairn/Cairn.entitlements
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CAIRN_DISPLAY_NAME: Cairn
+      configs:
+        # Told apart on the home screen from the App Store build it replaces.
+        Debug:
+          CAIRN_DISPLAY_NAME: Cairn Dev
     info:
       path: Cairn/Info.plist
       properties:
-        CFBundleDisplayName: Cairn
+        CFBundleDisplayName: $(CAIRN_DISPLAY_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
