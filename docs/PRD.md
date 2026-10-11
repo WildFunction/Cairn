@@ -51,8 +51,9 @@ reader sees 章, because that is the word they reached for. The two are not the 
 chapters — those appear only in a quote's provenance, which says 原书第 N 章 to keep them apart.
 The reader-facing noun lives in `packages/ui/src/copy.ts` so changing it stays one edit.
 
-1. **Pick a book** — a local EPUB, PDF, MOBI/AZW3, DOCX, TXT or Markdown file. A PDF must have a
-   text layer; a Kindle file must be DRM-free. Or one or more Markdown files of the reader's own
+1. **Pick a book** — a local EPUB, PDF, MOBI/AZW3, DOCX, TXT or Markdown file. A scanned PDF
+   is read by the Mac's own OCR, at about three pages a second; without it (on
+   Windows) a PDF must have a text layer. A Kindle file must be DRM-free. Or one or more Markdown files of the reader's own
    notes, walked as one path in file-name order and narrated as theirs, not an author's.
 2. **Preview** — parse only, no model call, so picking a file stays instant: title, author,
    chapter count, word count.
@@ -644,7 +645,7 @@ tell whether a prompt change made things better or worse.
 | --- | --- |
 | Sharing / publishing / accounts / telemetry / a networked server | Personal tool |
 | DRM removal, KFX | Not ours to break; KFX is undocumented. A DRM'd Kindle file is refused by name |
-| OCR of scanned PDFs | A scan has no text layer; OCR brings a model runtime and its own errors. A text PDF is read, with bookmarks as chapters and headings as the fallback. Multi-column layouts are read in content-stream order and may interleave |
+| OCR beyond what macOS ships | A scanned PDF is read by the Vision framework through a helper, locally and at no cost. A bundled OCR engine or a vision model would bring a runtime, a bill, or pages leaving the machine; where there is no helper a scan is refused by name. Multi-column layouts may interleave, scanned or not |
 | mp4 rendering | The slide player replaces it |
 | Image generation | Abstract ideas do not yield informative illustrations |
 | MCP | One search is not worth a protocol |

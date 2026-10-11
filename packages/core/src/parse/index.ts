@@ -4,11 +4,11 @@ import { detectFormat } from './format';
 import { parseDocx } from './docx';
 import { parseMarkdown } from './markdown';
 import { parseMobi } from './mobi';
-import { parsePdf } from './pdf';
+import { parsePdf, type PdfOcr } from './pdf';
 import { parseTxt } from './txt';
 
 /** Dispatch by extension. All parsing happens locally; the file is never uploaded. */
-export async function parseBook(bytes: Uint8Array, fileName: string): Promise<ParsedBook> {
+export async function parseBook(bytes: Uint8Array, fileName: string, ocr?: PdfOcr): Promise<ParsedBook> {
   switch (detectFormat(fileName)) {
     case 'epub':
       return parseEpub(bytes, fileName);
@@ -17,7 +17,7 @@ export async function parseBook(bytes: Uint8Array, fileName: string): Promise<Pa
     case 'markdown':
       return parseMarkdown(bytes, fileName);
     case 'pdf':
-      return parsePdf(bytes, fileName);
+      return parsePdf(bytes, fileName, ocr);
     case 'mobi':
       return parseMobi(bytes, fileName);
     case 'docx':
@@ -26,5 +26,5 @@ export async function parseBook(bytes: Uint8Array, fileName: string): Promise<Pa
 }
 
 export { ACCEPTED_EXTENSIONS, detectFormat } from './format';
-export { parseDocx, parseEpub, parseMarkdown, parseMobi, parsePdf, parseTxt };
+export { parseDocx, parseEpub, parseMarkdown, parseMobi, parsePdf, parseTxt, type PdfOcr };
 export * from '../types';

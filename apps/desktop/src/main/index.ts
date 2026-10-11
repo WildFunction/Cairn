@@ -6,10 +6,11 @@
  * The renderer cannot spawn processes, so everything touching the model, the
  * file system or the network lives in this process and is reached over RPC.
  */
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ApplicationMenu, BrowserView, BrowserWindow, Updater } from 'electrobun/main';
 import { createBookBuilder } from '@cairn/core/books/builder';
-import { cloudKitStore, edgeTtsNarrator } from '@cairn/core/runtime';
+import { cloudKitStore, edgeTtsNarrator, visionOcr } from '@cairn/core/runtime';
 import { createAutoSync } from '@cairn/core/sync/auto';
 import { createPositionSync } from '@cairn/core/sync/position';
 import { readBookSource } from '@cairn/core/store/book-source';
@@ -21,6 +22,7 @@ import { createWeread } from './weread/service';
 import { createWereadLogin } from './weread/login';
 import { DATA_DIR, library } from './store';
 import { installedSyncHelper } from './sync-helper';
+import { ocrHelperPath } from './ocr-helper';
 import { ledgerName, syncedBytes, syncLedger } from './cloud-sync';
 import { voiceFor, type UiLocale } from '../shared/settings';
 import type { CairnRPC } from '../shared/schema';
@@ -97,6 +99,8 @@ const wereadLogin = createWereadLogin({
   save: async (key, account) => { await writeSettings({ wereadKey: key, wereadAccount: account }); },
 });
 
+const ocrHelper = ocrHelperPath(process.execPath);
+
 const handlers = createHandlers({
   books,
   position,
@@ -104,6 +108,7 @@ const handlers = createHandlers({
   weread,
   wereadLogin,
   devBuild,
+  ocr: existsSync(ocrHelper) ? visionOcr(ocrHelper) : undefined,
   menu,
   emit: {
     progress: (p) => send().progress(p),

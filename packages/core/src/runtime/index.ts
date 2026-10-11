@@ -17,3 +17,4 @@ export {
   edgeTtsNarrator, ensureNarrationReachable, forgetNarrationProbe, speakSample, synthesize,
 } from './edge-tts-ws';
 export { listTraces, readTrace, traceDirSink, traceFileName } from './trace-dir';
+export { visionOcr } from './vision-ocr';

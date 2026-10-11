@@ -10,17 +10,22 @@
  * a book added here is the book the app would have made — and a run cut short
  * here resumes when the book is opened there.
  */
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { bookIdFor, createBookBuilder } from '../packages/core/src/books/builder';
 import type { DeckStatus, Progress } from '../packages/core/src/books/progress';
 import { ACCEPTED_EXTENSIONS } from '../packages/core/src/parse/format';
 import { budgetsFor, shapeOf, suggestBudgets, type BudgetId } from '../packages/core/src/pipeline/budget';
 import { edgeTtsNarrator } from '../packages/core/src/runtime/edge-tts-ws';
+import { visionOcr } from '../packages/core/src/runtime/vision-ocr';
 import { providerFor } from '../apps/desktop/src/main/provider';
 import { readBook, sourceOf } from '../apps/desktop/src/main/inspect';
 import { readSettings } from '../apps/desktop/src/main/settings';
 import { library } from '../apps/desktop/src/main/store';
 import { voiceFor } from '../apps/desktop/src/shared/settings';
+
+/** Built by any macOS build of the app, or by `bun run ocr-helper` in apps/desktop. */
+const OCR_HELPER = resolve(import.meta.dir, '../apps/desktop/ocr-helper/build/cairn-ocr');
 
 const BUDGET_IDS: readonly BudgetId[] = ['quick', 'brief', 'solid', 'full'];
 
@@ -34,7 +39,7 @@ async function main(): Promise<void> {
 
   const paths = files.map((f) => resolve(f));
   const source = sourceOf(paths);
-  const book = await readBook(paths);
+  const book = await readBook(paths, existsSync(OCR_HELPER) ? visionOcr(OCR_HELPER) : undefined);
   console.log(`《${book.title}》${book.author ? ` · ${book.author}` : ''}`);
   console.log(`${book.chapters.length} 章 · ${book.totalWords.toLocaleString()} 字\n`);
 

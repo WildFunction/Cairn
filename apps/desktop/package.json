@@ -9,6 +9,7 @@
     "build": "vite build",
     "start": "electrobun prepare && vite build && electrobun dev",
     "package": "electrobun prepare && vite build && electrobun build --env=stable",
+    "ocr-helper": "bun scripts/embed-ocr-helper.ts",
     "sync-helper": "xcodebuild -project sync-helper/CairnSync.xcodeproj -scheme CairnSync -configuration Debug -derivedDataPath sync-helper/build -allowProvisioningUpdates build"
   },
   "dependencies": {

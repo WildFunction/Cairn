@@ -6,6 +6,7 @@ import type { SyncedPlace } from '@cairn/core/sync/progress';
 import type { Weread } from './weread/service';
 import type { WereadLogin } from './weread/login';
 import type { LoginStep } from '../shared/weread-login';
+import type { PdfOcr } from '@cairn/core/parse';
 import { ACCEPTED_EXTENSIONS } from '@cairn/core/parse/format';
 import type { BudgetId } from '@cairn/core/pipeline/budget';
 import { isBookId, type LibraryEntry } from '@cairn/core/store/library';
@@ -50,6 +51,8 @@ export interface HandlerDeps {
   readonly weread: Weread;
   readonly wereadLogin: WereadLogin;
   readonly devBuild: boolean;
+  /** Reads a scanned PDF; absent where the OCR helper is. */
+  readonly ocr: PdfOcr | undefined;
   /** Rebuilds the native menu in the reader's language. */
   readonly menu: (locale: UiLocale) => void;
   /** Pushed to the window; fire-and-forget, so each has a pull-side twin. */
@@ -59,7 +62,7 @@ export interface HandlerDeps {
   };
 }
 
-export function createHandlers({ books, position, cloudSync, weread, wereadLogin, devBuild, menu, emit }: HandlerDeps) {
+export function createHandlers({ books, position, cloudSync, weread, wereadLogin, devBuild, ocr, menu, emit }: HandlerDeps) {
   /** One reader, one conversation: a second send while a turn runs is refused. */
   let activeChat: { readonly turnId: string; readonly controller: AbortController } | undefined;
 
@@ -90,13 +93,13 @@ export function createHandlers({ books, position, cloudSync, weread, wereadLogin
         canChooseDirectory: false,
         allowsMultipleSelection: true,
       })).filter((p) => p.length > 0);
-      return picked.length > 0 ? inspect(picked) : null;
+      return picked.length > 0 ? inspect(picked, ocr) : null;
     },
 
     async generateBook(params: { filePaths: readonly string[]; budgetId: BudgetId }): Promise<LibraryEntry> {
       latest = { stage: 'map', done: 0, total: 1 };
       try {
-        const book = await readBook(params.filePaths);
+        const book = await readBook(params.filePaths, ocr);
         const { entry } = await books.generate(book, sourceOf(params.filePaths), params.budgetId, (p) => {
           latest = p;
           emit.progress(p);

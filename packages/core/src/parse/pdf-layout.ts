@@ -11,6 +11,14 @@ export interface PdfLine {
   readonly y: number;
 }
 
+/** A patch of text OCR found on a page, placed in PDF units from the page's bottom-left corner. */
+export interface OcrRun {
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly height: number;
+}
+
 export interface OutlineMark {
   readonly title: string;
   /** Zero-based page index the bookmark points at. */
@@ -47,6 +55,27 @@ export function stripRunningLines(pages: readonly (readonly PdfLine[])[]): reado
     while (end > start && lines.length - end < EDGE_LINES && isRunning(lines[end - 1])) end -= 1;
     return lines.slice(start, end);
   });
+}
+
+/** OCR promises no reading order, and breaks one printed line wherever the spacing widens. */
+export function linesFromRuns(runs: readonly OcrRun[]): readonly PdfLine[] {
+  const rows: OcrRun[][] = [];
+  for (const run of [...runs].sort((a, b) => b.y - a.y)) {
+    const row = rows[rows.length - 1];
+    const head = row?.[0];
+    if (row && head && head.y - run.y <= Math.min(head.height, run.height) / 2) row.push(run);
+    else rows.push([run]);
+  }
+  return rows
+    .map((row) => ({
+      text: [...row].sort((a, b) => a.x - b.x).map((run) => run.text.trim()).reduce(beside),
+      y: row[0]!.y,
+    }))
+    .filter((line) => line.text.length > 0);
+}
+
+function beside(left: string, right: string): string {
+  return CJK.test(left.slice(-1)) || CJK.test(right.charAt(0)) ? left + right : `${left} ${right}`.trim();
 }
 
 function edges(lines: readonly PdfLine[]): readonly PdfLine[] {

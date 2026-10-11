@@ -1,7 +1,8 @@
 /**
  * PDF books with a text layer. Chapters come from the bookmarks when the file
  * has them and from headings in the text when it does not. A scan has no text
- * to read, and OCR stays out of scope: it is named as a scan, not guessed at.
+ * to read: it goes to the caller's OCR when there is one, and is named as a
+ * scan when there is not. Its bookmarks are read either way.
  */
 import { getDocumentProxy } from 'unpdf';
 import { type Chapter, type ParsedBook, ParseError } from '../types';
@@ -9,6 +10,8 @@ import { chunkBlocks } from './chunk';
 import { localeFromText } from './language';
 import {
   blocksFromOutline,
+  linesFromRuns,
+  type OcrRun,
   type OutlineMark,
   pageParagraphs,
   type PdfLine,
@@ -25,16 +28,19 @@ type OutlineNode = NonNullable<Awaited<ReturnType<PdfDocument['getOutline']>>>[n
 /** Below this many words per page the text layer is a scan's stray OCR, not a book. */
 const MIN_WORDS_PER_PAGE = 10;
 
-export async function parsePdf(bytes: Uint8Array, fileName: string): Promise<ParsedBook> {
+/** Every page of a scan as the text found on it. `runtime/vision-ocr.ts` is the one there is. */
+export type PdfOcr = (bytes: Uint8Array) => Promise<readonly (readonly OcrRun[])[]>;
+
+type Pages = readonly (readonly string[])[];
+
+export async function parsePdf(bytes: Uint8Array, fileName: string, ocr?: PdfOcr): Promise<ParsedBook> {
   if (bytes.byteLength === 0) throw new ParseError('文件为空', 'empty_file');
 
   const pdf = await open(bytes);
   try {
-    const pages = stripRunningLines(await readLines(pdf)).map(pageParagraphs);
-    const words = pages.reduce((sum, page) => sum + page.reduce((n, p) => n + countWords(p), 0), 0);
-    if (words < pdf.numPages * MIN_WORDS_PER_PAGE) {
-      throw new ParseError('PDF 没有文字层，可能是扫描件', 'scanned_pdf');
-    }
+    const typeset = paragraphsOf(await readLines(pdf));
+    const pages = isScan(typeset) && ocr ? paragraphsOf((await ocr(bytes)).map(linesFromRuns)) : typeset;
+    if (isScan(pages)) throw new ParseError('PDF 没有文字层，可能是扫描件', 'scanned_pdf');
 
     const language = localeFromText(textOfPages(pages.slice(0, 30)).slice(0, 4000));
     const { parse } = promptsFor(language);
@@ -58,6 +64,15 @@ export async function parsePdf(bytes: Uint8Array, fileName: string): Promise<Par
   } finally {
     await pdf.loadingTask.destroy();
   }
+}
+
+function paragraphsOf(pages: readonly (readonly PdfLine[])[]): Pages {
+  return stripRunningLines(pages).map(pageParagraphs);
+}
+
+function isScan(pages: Pages): boolean {
+  const words = pages.reduce((sum, page) => sum + page.reduce((n, p) => n + countWords(p), 0), 0);
+  return words < pages.length * MIN_WORDS_PER_PAGE;
 }
 
 async function open(bytes: Uint8Array): Promise<PdfDocument> {

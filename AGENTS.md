@@ -32,6 +32,7 @@ bun run start     # the real desktop app
 bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity;
                   # with CAIRN_SYNC_PROFILE and scripts/signing first on PATH it carries the iCloud helper
 bun run sync-helper   # the Swift helper a development build uses; needs Xcode signed in to the team
+bun run ocr-helper    # the OCR helper `bun run add-book` uses for a scanned PDF; any app build makes it too
 
 bun run ios:sample   # export the built-in book from the library into the iOS app (git-ignored)
 bun run ios:stage    # build the iOS app's slide page (git-ignored)
@@ -103,7 +104,8 @@ packages/
                  iCloud in step with the library once switched on (auto.ts).
                  Pure: the cloud is the `CloudStore` interface
     runtime/     Everything that spawns a process or talks to a service:
-                 codex-cli.ts, edge-tts-ws.ts, trace-dir.ts, cloudkit-helper.ts
+                 codex-cli.ts, edge-tts-ws.ts, trace-dir.ts, cloudkit-helper.ts,
+                 vision-ocr.ts
   ui/            Shared React components and design tokens; slide layout renderers
     i18n/        Two dictionaries and the type that keeps them in step
     settings/    The settings panel, and the preferences the webview owns
@@ -113,6 +115,8 @@ apps/
                  narrator, the book builder and the RPC handlers and passes them
                  in. `store.ts` holds the process's one `Library`.
     src/shared/  Types both sides import; `schema.ts` is the one RPC contract
+    ocr-helper/  One Swift file: a scanned PDF in, the text Vision finds on each
+                 page out. Compiled into every macOS build by `scripts/post-build.ts`
     sync-helper/ CairnSync, a Swift helper app: the only process with the iCloud
                  entitlement. One JSON request in, one reply out, per call
   ios/           The iPhone player, UIKit in Swift. `project.yml` is the source;
@@ -381,7 +385,8 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
 
 ## Boundaries
 
-**Out of scope:** OCR (a scanned PDF is refused as `scanned_pdf`) · DRM removal (`drm_protected`) · KFX · MP4 rendering · image generation · spaced repetition · user
+**Out of scope:** OCR beyond the Mac's own (a scanned PDF is read by Vision through `ocr-helper/`,
+and refused as `scanned_pdf` where that is missing or finds nothing) · DRM removal (`drm_protected`) · KFX · MP4 rendering · image generation · spaced repetition · user
 accounts · telemetry · any networked server component.
 
 **Planned, and the reason several decisions look the way they do:** books generated on the Mac

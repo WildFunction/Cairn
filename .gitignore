@@ -9,6 +9,8 @@ apps/desktop/artifacts/
 
 # The iCloud sync helper's Xcode build, and Xcode's per-user state.
 apps/desktop/sync-helper/build/
+# The OCR helper, compiled from ocr-helper/main.swift on every macOS build.
+apps/desktop/ocr-helper/build/
 xcuserdata/
 
 # The iOS app: Xcode and SwiftPM build output, the built slide page (`bun run ios:stage`)

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   blocksFromOutline,
   joinLines,
+  linesFromRuns,
   pageParagraphs,
   stripRunningLines,
   textOfPages,
@@ -107,5 +108,27 @@ describe('blocksFromOutline', () => {
       { title: 'One', page: 1, group: 'One' },
     ]);
     expect(blocks.map((b) => b.title)).toEqual(['', 'One', 'Two']);
+  });
+});
+
+describe('linesFromRuns', () => {
+  const run = (text: string, x: number, y: number) => ({ text, x, y, height: 10 });
+
+  test('reads top to bottom whatever order the runs arrive in', () => {
+    const lines = linesFromRuns([run('third', 50, 700), run('first', 50, 728), run('second', 50, 714)]);
+    expect(lines.map((l) => l.text)).toEqual(['first', 'second', 'third']);
+  });
+
+  test('runs sharing a baseline are one line, left to right', () => {
+    const lines = linesFromRuns([run('the market', 200, 701), run('Kelly sizes', 50, 700), run('Next line.', 50, 686)]);
+    expect(lines.map((l) => l.text)).toEqual(['Kelly sizes the market', 'Next line.']);
+  });
+
+  test('Chinese runs join without a space', () => {
+    expect(linesFromRuns([run('量化交易', 50, 700), run('的基础', 200, 700)]).map((l) => l.text)).toEqual(['量化交易的基础']);
+  });
+
+  test('a page with nothing on it has no lines', () => {
+    expect(linesFromRuns([])).toEqual([]);
   });
 });

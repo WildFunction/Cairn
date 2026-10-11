@@ -62,9 +62,11 @@ packages/core/     Domain types, parsing, pipeline, storage — no framework imp
   books/           builder.ts — adding, resuming, removing a book; progress.ts
   companion/       citation and chat contracts, web search interface
   store/           library.ts (layout) · library-disk.ts (Library) · file-store.ts
-  runtime/         codex-cli.ts, codex-credentials.ts, edge-tts-ws.ts, trace-dir.ts
+  runtime/         codex-cli.ts, codex-credentials.ts, edge-tts-ws.ts, trace-dir.ts,
+                   vision-ocr.ts
 packages/ui/       React components, design tokens, slide layout renderers
-apps/desktop/      Electrobun shell: main process + webview; sync-helper/ (CloudKit)
+apps/desktop/      Electrobun shell: main process + webview; sync-helper/ (CloudKit);
+                   ocr-helper/ (Vision, for scanned PDFs)
 apps/ios/          The iPhone player: Cairn/ (UIKit app) · CairnKit/ (Swift package, no
                    UIKit) · stage/ (the slide page, a second webview entry)
 scripts/           add-book.ts, replay.ts, sync-book.ts, export-ios-sample.ts, typecheck.ts
@@ -206,6 +208,7 @@ It is the only process that listens, and it is not reachable from outside the ma
 | Web search | Tavily | The companion may search when it helps answer accurately |
 | EPUB parsing | JSZip, then our own extraction | We only need the text; epub.js brings a whole rendering engine |
 | PDF parsing | `unpdf` (pdf.js, serverless build), then `pdf-layout.ts` | Pure JS with no worker, so it runs on cottontail; MinerU, Docling and PyMuPDF would each bring a Python runtime. Bookmarks give chapters, headings are the fallback |
+| Scanned PDFs | Vision, through `ocr-helper/` (`runtime/vision-ocr.ts`) | Ships with macOS, reads Chinese and English, and nothing leaves the machine. The helper returns runs of text with positions, so a scan goes through the same `pdf-layout.ts` as a typeset page and keeps its bookmarks. Tesseract misread about one character in a hundred on the same scan and needs its language data bundled; a vision model costs a call per page |
 | MOBI / AZW3 parsing | PalmDB reader ported from foliate-js's byte layer (`mobi-decode.ts`) | No JS library reads Kindle text without a DOM: foliate-js needs `DOMParser` throughout, and `@lingo-reader/mobi-parser` writes every image to disk and crashed on a real Gutenberg AZW3. KF8 half preferred; a MOBI6-only body has no heading tags, so its chapters are named "Section n" (its NCX index is not read) |
 | DOCX parsing | mammoth, then the EPUB heading split | Handles tables, lists and tracked changes. Headings come from mammoth's style map, by style name: a custom style merely based on Heading 1 is body text |
 | Chat surface | `CompanionPane.tsx` | App-owned messages, tool trail, and source citations |
@@ -414,7 +417,8 @@ embeds a provisioning profile granting it. So the helper is its own signed app,
 
 - **A development build** uses the one `bun run sync-helper` builds in the repository, signed by
   Xcode with a development profile. It talks to CloudKit's **Development** environment.
-- **A packaged app** carries one built by the `postBuild` hook, `scripts/embed-sync-helper.ts`,
+- **A packaged app** carries one built by `scripts/embed-sync-helper.ts`, run from the `postBuild`
+  hook (`scripts/post-build.ts`),
   signed with the Developer ID certificate, `CairnSync.release.entitlements` and the Developer ID
   profile named by `CAIRN_SYNC_PROFILE`. It talks to **Production**, which is also where an App
   Store build of the phone app reads.
