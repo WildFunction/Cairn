@@ -64,6 +64,10 @@ const cloudSync = createAutoSync({
   books: () => library.list(),
   source: (entry) => readBookSource(library, entry),
   sizeOf: syncedBytes,
+  finish: async (bookId) => {
+    if (await books.resume(bookId)) books.schedulerFor(bookId)?.finish();
+  },
+  finishing: (bookId) => books.schedulerFor(bookId)?.finishing ?? false,
   ledger: syncLedger(join(DATA_DIR, ledgerName(devBuild))),
   onStatus: (status) => send().cloudStatus(status),
   log: (what, cause) => console.error(what, cause),

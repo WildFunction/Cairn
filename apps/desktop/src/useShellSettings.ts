@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useT, type CloudPanel, type ShellPrefs, type ShellSettings, type VoiceOption } from '@cairn/ui';
+import { switchedState, useT, type CloudPanel, type ShellPrefs, type ShellSettings, type VoiceOption } from '@cairn/ui';
 import type { CloudSyncStatus } from '@cairn/core/sync/auto';
 import {
   clearCache, cloudRemoveAll, cloudSetBook, cloudStatus, cloudSyncNow, dataDir, devBuild, getSettings, inShell,
@@ -182,7 +182,7 @@ export function useShellSettings(): ShellSettings | undefined {
       // Optimistic, like every other switch here; the main process's status replaces the guess
       setCloudNow((now) => (now ? {
         ...now,
-        books: now.books.map((book) => (book.id === bookId ? { ...book, state: on ? 'waiting' : 'off' } : book)),
+        books: now.books.map((book) => (book.id === bookId ? { ...book, state: switchedState(book.state, on) } : book)),
       } : now));
       cloudSetBook(bookId, on);
     },

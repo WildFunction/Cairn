@@ -26,11 +26,13 @@ function world(options: { books?: LibraryEntry[]; ledger?: SyncLedger; enabled?:
   const calls: string[] = [];
   const statuses: CloudSyncStatus[] = [];
   const logged: string[] = [];
+  const finishing = new Set<string>();
   const state = {
     books: options.books ?? [entryOf('book-a'), entryOf('book-b')],
     ledger: options.ledger ?? EMPTY_LEDGER,
     enabled: options.enabled ?? true,
     failing: undefined as CloudError | undefined,
+    noModel: false,
     onSave: undefined as (() => Promise<void>) | undefined,
   };
   const store: CloudStore = {
@@ -59,10 +61,15 @@ function world(options: { books?: LibraryEntry[]; ledger?: SyncLedger; enabled?:
     source: async (entry) => sourceOf(entry),
     sizeOf: async () => 1000,
     ledger: { read: async () => state.ledger, write: async (next) => { state.ledger = next; } },
+    finish: async (bookId) => {
+      if (state.noModel) throw new Error('no_model');
+      finishing.add(bookId);
+    },
+    finishing: (bookId) => finishing.has(bookId),
     onStatus: (status) => statuses.push(status),
     log: (what) => logged.push(what),
   });
-  return { sync, zones, calls, statuses, logged, state };
+  return { sync, zones, calls, statuses, logged, state, finishing };
 }
 
 const inCloud = (w: ReturnType<typeof world>): string[] => [...w.zones.keys()].sort();
@@ -243,6 +250,49 @@ describe('setBook', () => {
     await w.sync.run();
     expect(inCloud(w)).toEqual([zoneOf('book-a'), zoneOf('book-b')]);
     expect(w.calls.filter((call) => call.startsWith('drop'))).toEqual([]);
+  });
+});
+
+describe('setBook on a book still being made', () => {
+  const stateOf = async (w: ReturnType<typeof world>, id: string) =>
+    (await w.sync.status()).books.find((b) => b.id === id)?.state;
+
+  test('on has the rest of it built now, and says so until it is finished', async () => {
+    const w = world({ books: [entryOf('book-a'), entryOf('book-c', false)] });
+    expect(await stateOf(w, 'book-c')).toBe('building');
+    await w.sync.setBook('book-c', true);
+    expect([...w.finishing]).toEqual(['book-c']);
+    expect(await stateOf(w, 'book-c')).toBe('generating');
+    expect(w.statuses.some((s) => s.books.some((b) => b.id === 'book-c' && b.state === 'generating'))).toBe(true);
+    expect(inCloud(w)).toEqual([zoneOf('book-a')]);
+
+    w.state.books = [entryOf('book-a'), entryOf('book-c')];
+    await w.sync.run();
+    expect(await stateOf(w, 'book-c')).toBe('synced');
+  });
+
+  test('a finished book switched on is uploaded, not built', async () => {
+    const w = world({ ledger: { off: ['book-a'], sent: [], drop: [] } });
+    await w.sync.setBook('book-a', true);
+    expect([...w.finishing]).toEqual([]);
+  });
+
+  test('off keeps it out of iCloud, and it no longer reads as wanted', async () => {
+    const w = world({ books: [entryOf('book-c', false)] });
+    await w.sync.setBook('book-c', true);
+    await w.sync.setBook('book-c', false);
+    expect(await stateOf(w, 'book-c')).toBe('building');
+    w.state.books = [entryOf('book-c')];
+    await w.sync.run();
+    expect(inCloud(w)).toEqual([]);
+  });
+
+  test('a build that cannot start is logged, and the book stays as it was', async () => {
+    const w = world({ books: [entryOf('book-c', false)] });
+    w.state.noModel = true;
+    await w.sync.setBook('book-c', true);
+    expect(w.logged).toEqual(['building the rest of book-c']);
+    expect(await stateOf(w, 'book-c')).toBe('building');
   });
 });
 

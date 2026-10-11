@@ -251,7 +251,8 @@ Not built: `world` (a novel's setting; nothing in the notes supports it yet) and
 ## Motion
 
 Two places have it: items building with the narration (above), and the player chrome (below).
-Everywhere else, still none. When adding more:
+One indicator spins: `.set-spin`, beside a book being finished for iCloud in settings, where the
+wait is minutes and there is no count worth a line. Everywhere else, still none. When adding more:
 
 - **Springs, not fixed-duration easing.** A spring can be interrupted and carries velocity; a
   scripted animation cannot.

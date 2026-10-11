@@ -112,9 +112,15 @@ export interface CloudBookRow {
   readonly title: string;
   /** What it takes in iCloud, and again on the phone. */
   readonly bytes: number;
-  readonly state: 'synced' | 'waiting' | 'uploading' | 'off' | 'building' | 'failed';
+  readonly state: 'synced' | 'waiting' | 'uploading' | 'off' | 'building' | 'generating' | 'failed';
   readonly done?: number;
   readonly total?: number;
+}
+
+/** What a row reads the moment its switch is thrown: a book still being made is built first, not uploaded. */
+export function switchedState(state: CloudBookRow['state'], on: boolean): CloudBookRow['state'] {
+  if (on) return state === 'building' ? 'generating' : 'waiting';
+  return state === 'generating' ? 'building' : 'off';
 }
 
 /** iCloud as the settings panel sees it. The switch itself is `prefs.icloudSync`. */

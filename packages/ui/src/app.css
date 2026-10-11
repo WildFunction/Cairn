@@ -847,11 +847,20 @@ body {
   display: block; margin-top: 4px; color: var(--dim); font-size: .82em;
 }
 
+/* A book being finished for iCloud: there is no count worth showing in a hint, only that it is under way. */
+.set-spin {
+  display: inline-block; width: .8em; height: .8em; margin-right: .45em; vertical-align: -.08em;
+  border: 1.5px solid var(--line); border-top-color: currentColor; border-radius: 50%;
+  animation: set-spin .9s linear infinite;
+}
+@keyframes set-spin { to { transform: rotate(360deg); } }
+
 /* Every transition above is decoration; none of them carries meaning. */
 @media (prefers-reduced-motion: reduce) {
   .set-nav-item, .set-seg button, .set-btn, .set-switch, .set-switch::after, .set-x {
     transition: none;
   }
+  .set-spin { animation: none; }
 }
 
 /* The shelf's way into settings. Top-right of the header rather than beside the

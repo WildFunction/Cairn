@@ -88,6 +88,9 @@ export interface DeckScheduler {
    * prefetch is not, and both go through the same provider.
    */
   pause(): () => void;
+  /** Build all that is left at a committed reader's pace: the owner wants the whole book, not the next station. */
+  finish(): void;
+  readonly finishing: boolean;
   /** Queue every failed station again, first. Undefined once the run is over: start a new one. */
   retryFailed(): readonly string[] | undefined;
   /** Resolves when nothing is left to build, or after `stop`. */
@@ -118,6 +121,7 @@ export function startDeckScheduler(options: DeckSchedulerOptions): DeckScheduler
   /** The furthest station the reader has asked for, which is what grows the lanes. */
   let reached = 0;
   let stopped = false;
+  let finishing = false;
   let finished = false;
   let holds = 0;
   let resumeGate: (() => void) | undefined;
@@ -280,6 +284,12 @@ export function startDeckScheduler(options: DeckSchedulerOptions): DeckScheduler
         }
       };
     },
+
+    finish() {
+      finishing = true;
+      ensureLanes(fixedLookahead ?? COMMITTED_LOOKAHEAD);
+    },
+    get finishing() { return finishing; },
 
     retryFailed() {
       if (finished || stopped) return undefined;

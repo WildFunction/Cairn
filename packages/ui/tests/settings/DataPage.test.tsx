@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { DataPage } from '../../src/settings/pages';
 import { SettingsProvider } from '../../src/settings/SettingsProvider';
 import { megabytes } from '../../src/settings/CloudSection';
-import type { CloudPanel, ShellSettings } from '../../src/settings/shell';
+import { switchedState, type CloudPanel, type ShellSettings } from '../../src/settings/shell';
 
 const shell = (devBuild: boolean): ShellSettings => ({
   prefs: {
@@ -95,4 +95,24 @@ test('a build that cannot reach iCloud says why and offers no switch to throw', 
 test('sizes keep a decimal only where it tells two books apart', () => {
   expect(megabytes(7_140_000)).toBe('7.1 MB');
   expect(megabytes(28_400_000)).toBe('28 MB');
+});
+
+test('a book still being made can be switched on, and shows a spinner once it is being finished', () => {
+  const making = cloud({ books: [
+    { id: 'a', title: 'Half Made', bytes: 3_000_000, state: 'building' },
+    { id: 'b', title: 'Being Finished', bytes: 5_000_000, state: 'generating' },
+  ] });
+  const html = withCloud(making, true);
+  expect(html).toContain('aria-checked="false" aria-label="Sync Half Made"');
+  expect(html).toContain('aria-checked="true" aria-label="Sync Being Finished"');
+  expect(html).not.toContain('aria-label="Sync Half Made" disabled');
+  expect(html).toContain('3.0 MB · Still being made');
+  expect(html).toContain('<span class="set-spin" aria-hidden="true"></span>Making the rest');
+});
+
+test('throwing a switch reads at once as what the main process is about to do', () => {
+  expect(switchedState('building', true)).toBe('generating');
+  expect(switchedState('generating', false)).toBe('building');
+  expect(switchedState('off', true)).toBe('waiting');
+  expect(switchedState('synced', false)).toBe('off');
 });

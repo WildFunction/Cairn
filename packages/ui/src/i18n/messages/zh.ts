@@ -333,6 +333,7 @@ export const zh: Messages = {
         uploading: '正在上传',
         off: '不同步',
         building: '还没生成完',
+        generating: '正在生成剩下的站',
         failed: '上传失败，下次同步时重试',
       },
       uploading: (done: number, total: number) => (total > 0 ? `正在上传 ${done} / ${total}` : '正在上传'),

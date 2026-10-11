@@ -138,6 +138,26 @@ describe('startDeckScheduler', () => {
     await s.done;
   });
 
+  test('finish builds what is left at a committed reader\'s pace, wherever the reader is', async () => {
+    const g = gated();
+    const s = startDeckScheduler({ nodes: nodes(10), store: memoryStore<NodeDeck>(), build: g.build });
+
+    await g.waitStart(1);
+    await tick();
+    expect(g.started).toHaveLength(1);
+    expect(s.finishing).toBe(false);
+
+    s.finish();
+    await g.waitStart(6);
+    await tick();
+    expect(g.started).toHaveLength(6);
+    expect(s.finishing).toBe(true);
+
+    s.stop();
+    for (const id of g.outstanding()) g.release(id);
+    await s.done;
+  });
+
   test('waitFor 拿到那一站就返回，不等整本书', async () => {
     const g = gated();
     const s = startDeckScheduler({

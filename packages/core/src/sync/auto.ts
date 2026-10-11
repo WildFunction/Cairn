@@ -29,7 +29,8 @@ export function parseLedger(raw: unknown): SyncLedger {
   return { off: ids(record.off), sent: ids(record.sent), drop: ids(record.drop) };
 }
 
-export type BookSyncState = 'synced' | 'waiting' | 'uploading' | 'off' | 'building' | 'failed';
+/** `generating`: still being made, and the owner asked for the rest of it now so that it can go up. */
+export type BookSyncState = 'synced' | 'waiting' | 'uploading' | 'off' | 'building' | 'generating' | 'failed';
 
 export interface BookSync {
   readonly id: string;
@@ -57,8 +58,9 @@ export interface AutoSync {
   /** Upload what is missing and notice what was removed elsewhere. A call during a run queues one more. */
   run(): Promise<void>;
   /**
-   * Off keeps the book out of iCloud; on lets the next run upload it. The copy already there is
-   * removed at once when syncing is on, and at the next run otherwise.
+   * Off keeps the book out of iCloud; on lets the next run upload it, and has a book still being
+   * made built to the end first. The copy already there is removed at once when syncing is on,
+   * and at the next run otherwise.
    */
   setBook(bookId: string, on: boolean): Promise<void>;
   /** Take every book out of iCloud. The caller switches syncing off first, or the next run puts them back. */
@@ -76,6 +78,9 @@ export function createAutoSync(deps: {
   readonly books: () => Promise<readonly LibraryEntry[]>;
   readonly source: (entry: LibraryEntry) => Promise<BookSource>;
   readonly sizeOf: (entry: LibraryEntry) => Promise<number>;
+  /** Have every station a half-made book still lacks built now, not as its reader reaches them. */
+  readonly finish: (bookId: string) => Promise<void>;
+  readonly finishing: (bookId: string) => boolean;
   readonly ledger: { read(): Promise<SyncLedger>; write(next: SyncLedger): Promise<void> };
   readonly onStatus: (status: CloudSyncStatus) => void;
   readonly log: (what: string, cause: unknown) => void;
@@ -105,7 +110,8 @@ export function createAutoSync(deps: {
       deps.ledger.read(), deps.books(), deps.enabled(), reach(),
     ]);
     const books = await Promise.all(entries.map(async (entry): Promise<BookSync> => {
-      const state: BookSyncState = !normalizeEntry(entry).complete ? 'building'
+      const wanted = !ledger.off.includes(entry.id) && deps.finishing(entry.id);
+      const state: BookSyncState = !normalizeEntry(entry).complete ? (wanted ? 'generating' : 'building')
         : ledger.off.includes(entry.id) ? 'off'
         : uploading?.id === entry.id ? 'uploading'
         : failed.has(entry.id) ? 'failed'
@@ -229,6 +235,10 @@ export function createAutoSync(deps: {
       if (on) {
         await deps.ledger.write({ off: without(ledger.off, bookId), sent: ledger.sent, drop: without(ledger.drop, bookId) });
         failed.delete(bookId);
+        const entry = (await deps.books()).find((book) => book.id === bookId);
+        if (entry && !normalizeEntry(entry).complete) {
+          await deps.finish(bookId).catch((cause: unknown) => deps.log(`building the rest of ${bookId}`, cause));
+        }
         await announce();
         return run();
       }

@@ -113,14 +113,13 @@ function CloudBook({
       htmlFor={id}
       hint={(
         <span className={book.state === 'failed' ? 'set-hint warn' : 'set-hint'}>
-          {megabytes(book.bytes)} · {state}
+          {megabytes(book.bytes)} · {book.state === 'generating' && <span className="set-spin" aria-hidden="true" />}{state}
         </span>
       )}
     >
       <Switch
         id={id}
         checked={book.state !== 'off' && book.state !== 'building'}
-        disabled={book.state === 'building'}
         onChange={onChange}
         label={t.settings.cloud.bookSwitch(book.title)}
       />

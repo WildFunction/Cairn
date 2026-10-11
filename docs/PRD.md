@@ -340,7 +340,9 @@ with no account has something to open.
 **What is in iCloud is what is on the phone.** On the Mac, Settings → Data has one switch, off
 by default: with it on, every finished book uploads. The list under it is there either way, so
 what goes up can be chosen first: it shows what each book takes and lets any one be switched off —
-which takes it out of iCloud and off the phone and keeps it out. On the phone, touching and holding a book that came from iCloud offers the same removal;
+which takes it out of iCloud and off the phone and keeps it out. A book still being made can be
+switched on too: the stations it lacks are then built at once and not as its reader reaches them,
+the row spins until they are, and it uploads when the last one lands. On the phone, touching and holding a book that came from iCloud offers the same removal;
 the Mac notices and switches that book off. The book itself always stays on the Mac. Turning the
 main switch off stops uploading and stops syncing the place but leaves iCloud as it is; emptying
 it is a separate, confirmed button.

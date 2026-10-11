@@ -345,6 +345,7 @@ export const en = {
         uploading: 'Uploading',
         off: 'Not synced',
         building: 'Still being made',
+        generating: 'Making the rest',
         failed: 'Upload failed — tried again at the next sync',
       },
       uploading: (done: number, total: number) => (total > 0 ? `Uploading ${done} / ${total}` : 'Uploading'),
