@@ -266,4 +266,18 @@ export const GAUNTLET: readonly { readonly what: string; readonly slide: Slide }
       groups: [{ name: '环境', causes: ['看不见'] }, { name: '身份', causes: ['不认同'] }],
     },
   },
+  {
+    what: 'causes —— 两组各三条，组名与成因到上限，带标题和旁注',
+    slide: {
+      layout: 'causes',
+      heading: '为什么已经形成的习惯仍会中断',
+      effect: '一个坚持了数月的习惯突然中断',
+      groups: [
+        { name: '环境提示消失', causes: ['搬家后看不见提示', '出差打断原有节奏', '物品不在固定位置'] },
+        { name: '身份认同不足', causes: ['仍把自己当作新人', '只在乎眼前的结果', '一次失误就想放弃'] },
+      ],
+      focus: 0,
+      aside: '真正要避免的不是失败，而是连续失败',
+    },
+  },
 ];

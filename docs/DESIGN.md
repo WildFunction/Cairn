@@ -171,7 +171,7 @@ than in a comment on the component.
 | `pyramid` | A ranking the book states | Labels sit beside the shape, not in it: the apex is too narrow for a word, and a label shrunk to fit it would read as the least important level instead of the most |
 | `quadrant` | Two dimensions crossed into four types | The axes carry their ends as words — never arrows, never rotated text — and the cells are not coloured apart, because position already says which is which |
 | `overlap` | Where two or three things meet | Set names sit outside their circle so no word crosses a stroke; the meeting place is the one accent, because it is the claim and the sets are only its terms |
-| `causes` | One effect, its causes grouped | A fishbone. The effect arrives first because it is the question; groups alternate above and below the spine so no two bones share a side |
+| `causes` | One effect, its causes grouped | Two groups branch from the effect as a compact map; three or four use a fishbone, alternating above and below the spine |
 
 Four rules hold across all fourteen:
 
@@ -181,9 +181,10 @@ Four rules hold across all fourteen:
   above it. Evenly spaced beats put a card on screen *after* the sentence that introduced it,
   which reads as the deck lagging the voice. Everything is derived from audio time, so a scrub
   backwards folds the slide up again — an entry animation would replay out of step.
-  A connector — `flow`'s link, `timeline`'s spine, a `cycle` arc, the fishbone's spine and
-  bones — arrives with the item it leads to, not the one it leaves: drawn early, it points at
-  nothing, and a closed `cycle` ring would state the loop before the narration has.
+  A connector — `flow`'s link, `timeline`'s spine, a `cycle` arc, or the cause
+  map's branches and fishbone's bones — arrives with the item it leads to, not
+  the one it leaves: drawn early, it points at nothing, and a closed `cycle`
+  ring would state the loop before the narration has.
 - **No layout invents its own material.** `number`, `timeline`, `matrix`, `relation` and the five
   diagram layouts draw only on the material the map stage extracted (`figures`, `sequences`,
   `contrasts`, `relations`, `cycles`, `ranks`, `quadrants`, `overlaps`, `causes`). These look

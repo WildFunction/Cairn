@@ -191,7 +191,7 @@ NarrationCue { text, startMs, endMs }       // drives the caption
 | `pyramid` | A ranking the book states, apex first |
 | `quadrant` | Two dimensions crossed into four named types |
 | `overlap` | Two or three things that meet, and what the book calls the meeting place |
-| `causes` | One effect and its grouped causes, as a fishbone |
+| `causes` | One effect and its grouped causes: a branch map for two groups, a fishbone for three or four |
 
 Slides per station follow the station's length — roughly one per 22 seconds of narration, four
 at the fewest and fourteen at the most (`slideCount`). A fixed cap of six left a four-minute

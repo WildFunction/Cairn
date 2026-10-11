@@ -397,16 +397,16 @@
    the `transform` here instead of being overwritten by it. */
 .s-points li, .s-flow li, .s-pane, .s-bar-row, .s-tl li, .s-mx-row, .s-rel li,
 .s-cy-node, .s-cy-arrow, .s-cy-ring path, .s-py li, .s-qd-cell, .s-ov-item, .s-ov-meet,
-.s-fb-group, .s-aside {
+.s-cm-group, .s-cm-fork, .s-fb-group, .s-aside {
   transition: opacity .24s ease, transform .24s cubic-bezier(.2,.7,.3,1);
 }
-.s-bar-fill, .s-link, .s-tl li::after, .s-py-band, .s-fb-spine, .s-fb-bone {
+.s-bar-fill, .s-link, .s-tl li::after, .s-py-band, .s-cm-fork::after, .s-fb-spine, .s-fb-bone {
   transition: transform .24s cubic-bezier(.2,.7,.3,1);
 }
 .s-points li.out, .s-flow li.out, .s-pane.out,
 .s-bar-row.out, .s-tl li.out, .s-mx-row.out, .s-rel li.out,
 .s-cy-node.out, .s-ov-item.out, .s-ov-meet.out,
-.s-fb-group.out, .s-aside.out {
+.s-cm-group.out, .s-cm-fork.out, .s-fb-group.out, .s-aside.out {
   opacity: 0; transform: translateY(1.2cqw);
 }
 /* The arrow carries its rotation in `transform`, so it fades without moving. */
@@ -414,7 +414,7 @@
 .s-points li.in, .s-flow li.in, .s-pane.in,
 .s-bar-row.in, .s-tl li.in, .s-mx-row.in, .s-rel li.in,
 .s-cy-node.in, .s-py li.in, .s-qd-cell.in, .s-ov-item.in, .s-ov-meet.in,
-.s-fb-group.in, .s-aside.in { opacity: 1; transform: none; }
+.s-cm-group.in, .s-cm-fork.first, .s-cm-fork.all, .s-fb-group.in, .s-aside.in { opacity: 1; transform: none; }
 .s-cy-arrow.in, .s-cy-ring path.in { opacity: 1; }
 
 /* A connector is drawn when the item it leads to arrives, not with the one it
@@ -423,6 +423,8 @@
 .s-link.out { transform: scaleY(0); }
 .s-tl li::after { transform-origin: top; transform: scaleY(0); }
 .s-tl li.joined::after { transform: none; }
+.s-cm-fork.first::after { transform: scaleY(.5); }
+.s-cm-fork.all::after { transform: none; }
 .s-fb-spine { transform-origin: right; }
 .s-fb-spine.out { transform: scaleX(0); }
 .s-fb-group.above .s-fb-bone { transform-origin: 100% 100%; }
@@ -443,14 +445,14 @@
 @media (prefers-reduced-motion: reduce) {
   .s-points li, .s-flow li, .s-pane, .s-bar-row, .s-tl li, .s-mx-row, .s-rel li,
   .s-cy-node, .s-cy-arrow, .s-cy-ring path, .s-py li, .s-qd-cell, .s-ov-item, .s-ov-meet,
-  .s-fb-group, .s-aside, .s-bar-fill, .s-dots i,
+  .s-cm-group, .s-cm-fork, .s-cm-fork::after, .s-fb-group, .s-aside, .s-bar-fill, .s-dots i,
   .s-link, .s-tl li::after, .s-py-band, .s-fb-spine, .s-fb-bone { transition: none; }
   .s-points li.out, .s-flow li.out, .s-pane.out,
   .s-bar-row.out, .s-tl li.out, .s-mx-row.out, .s-rel li.out,
   .s-cy-node.out, .s-cy-arrow.out, .s-cy-ring path.out, .s-py li.out, .s-qd-cell.out,
-  .s-ov-item.out, .s-ov-meet.out, .s-fb-group.out, .s-aside.out { opacity: 1; transform: none; }
+  .s-ov-item.out, .s-ov-meet.out, .s-cm-group.out, .s-cm-fork.out, .s-fb-group.out, .s-aside.out { opacity: 1; transform: none; }
   .s-bar-row.out .s-bar-fill, .s-link.out, .s-tl li::after, .s-py li.out .s-py-band,
-  .s-fb-spine.out, .s-fb-group.out .s-fb-bone { transform: none; }
+  .s-cm-fork.first::after, .s-fb-spine.out, .s-fb-group.out .s-fb-bone { transform: none; }
 }
 
 /* ---- caption ---- */

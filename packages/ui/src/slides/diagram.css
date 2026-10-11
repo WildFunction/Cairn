@@ -101,7 +101,47 @@
   background: #2c2419;
 }
 
-/* ---- causes ----
+/* ---- causes, two groups ---- */
+.s.s-causes-pair { gap: .5cqw; }
+.s-cm { display: grid; grid-template-columns: 23cqw 7cqw minmax(0, 1fr); align-items: center; }
+.s-cm-effect {
+  min-width: 0; font-size: calc(2cqw * var(--fit, 1)); font-weight: 700;
+  line-height: calc(1.4 + var(--fit-lead, 0));
+  letter-spacing: calc(-.01em + var(--fit-track, 0em));
+  color: var(--stage-accent); padding: 1.2cqw;
+  border: 1px solid #e0a45866; border-radius: .8cqw; background: #e0a4580f;
+}
+.s-cm-fork { position: relative; align-self: stretch; }
+.s-cm-fork::before {
+  content: ''; position: absolute; top: 50%; left: 0; right: 50%;
+  border-top: 1px solid #e0a45873;
+}
+.s-cm-fork::after {
+  content: ''; position: absolute; top: 25%; bottom: 25%; left: 50%;
+  border-left: 1px solid #e0a45873; transform-origin: top;
+}
+.s-cm-groups { list-style: none; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: .7cqw; min-width: 0; }
+.s-cm-group {
+  position: relative; min-width: 0; padding: .5cqw 1.5cqw;
+  border: 1px solid #ffffff30; border-radius: .8cqw; background: #ffffff08;
+}
+.s-cm-group::before {
+  content: ''; position: absolute; top: 50%; left: -3.5cqw; width: 3.5cqw;
+  border-top: 1px solid #e0a45873;
+}
+.s-cm-group.hl { border-color: #e0a45866; background: #e0a4580f; }
+.s-cm-name {
+  font-size: calc(1.9cqw * var(--fit, 1)); font-weight: 700; white-space: nowrap;
+  letter-spacing: calc(-.01em + var(--fit-track, 0em));
+}
+.s-cm-group.hl .s-cm-name { color: var(--stage-accent); }
+.s-cm-group ul { list-style: none; display: flex; flex-direction: column; gap: .3cqw; margin-top: .5cqw; }
+.s-cm-group ul li {
+  font-size: calc(1.6cqw * var(--fit, 1)); white-space: nowrap; color: var(--stage-dim);
+  letter-spacing: calc(.004em + var(--fit-track, 0em));
+}
+
+/* ---- causes, three or four groups ----
 
    A fishbone: the spine runs into the effect, and each group's bone is the
    diagonal of its own strip, drawn as a gradient so it scales with the cell. */

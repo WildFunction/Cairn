@@ -38,12 +38,25 @@ describe('a connector arrives with the item it leads to', () => {
     expect(count(at(4), /s-cy-arrow in/g)).toBe(4);
   });
 
-  test('causes: the spine waits for the first group, the effect does not', () => {
+  test('causes: two groups branch from the effect as each group arrives', () => {
     const groups = [{ name: 'g1', causes: ['x'] }, { name: 'g2', causes: ['y'] }];
     const at = (shown: number): string => renderToStaticMarkup(
       createElement(Causes, { layout: 'causes', effect: 'e', groups, shown }),
     );
-    expect(at(1)).toContain('s-fb-spine out');
-    expect(at(2)).toContain('s-fb-spine in');
+    expect(at(1)).toContain('s-cm-fork out');
+    expect(at(1)).toContain('s-cm-group out');
+    expect(at(2)).toContain('s-cm-fork first');
+    expect(at(2)).toContain('s-cm-group in');
+    expect(at(3)).toContain('s-cm-fork all');
+    expect(at(2)).not.toContain('s-fb-spine');
+  });
+
+  test('causes: four groups keep the fishbone', () => {
+    const groups = ['a', 'b', 'c', 'd'].map((name) => ({ name, causes: ['x'] }));
+    const html = renderToStaticMarkup(createElement(Causes, {
+      layout: 'causes', effect: 'e', groups, shown: 2,
+    }));
+    expect(html).toContain('s-fb-spine in');
+    expect(html).not.toContain('s-cm-fork');
   });
 });
