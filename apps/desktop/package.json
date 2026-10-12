@@ -10,7 +10,8 @@
     "start": "electrobun prepare && vite build && electrobun dev",
     "package": "electrobun prepare && vite build && electrobun build --env=stable",
     "ocr-helper": "bun scripts/embed-ocr-helper.ts",
-    "sync-helper": "xcodebuild -project sync-helper/CairnSync.xcodeproj -scheme CairnSync -configuration Debug -derivedDataPath sync-helper/build -allowProvisioningUpdates build"
+    "sync-helper": "xcodebuild -project sync-helper/CairnSync.xcodeproj -scheme CairnSync -configuration Debug -derivedDataPath sync-helper/build/production -allowProvisioningUpdates build",
+    "sync-helper:development": "xcodebuild -project sync-helper/CairnSync.xcodeproj -scheme CairnSync -configuration Debug -derivedDataPath sync-helper/build/development -allowProvisioningUpdates CODE_SIGN_ENTITLEMENTS=CairnSync/CairnSync.development.entitlements build"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "0.87.1",

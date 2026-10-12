@@ -413,19 +413,25 @@ place must never bring back a zone its book was removed from.
 iCloud is a restricted entitlement: macOS launches a process that claims it only when the bundle
 embeds a provisioning profile granting it. So the helper is its own signed app,
 `Cairn.app/Contents/Helpers/CairnSync.app`, found from the main process's executable
-(`main/sync-helper.ts`). Two builds of it exist and they reach different databases:
+(`main/sync-helper.ts`). Two builds of it exist:
 
 - **A development build** uses the one `bun run sync-helper` builds in the repository, signed by
-  Xcode with a development profile. It talks to CloudKit's **Development** environment.
+  Xcode with a development profile. Its entitlements name **Production**, so `bun run start` sees
+  the books the installed app and the phone see. Development is where a record type can still be
+  created and removed, so a change to `sync/book.ts` is tried there first:
+  `bun run sync-helper:development`, then `CAIRN_SYNC_ENV=development bun run start`. A packaged
+  app ignores that variable.
 - **A packaged app** carries one built by `scripts/embed-sync-helper.ts`, run from the `postBuild`
   hook (`scripts/post-build.ts`),
   signed with the Developer ID certificate, `CairnSync.release.entitlements` and the Developer ID
   profile named by `CAIRN_SYNC_PROFILE`. It talks to **Production**, which is also where an App
   Store build of the phone app reads.
 
-Because the two environments hold different books, each build keeps its own ledger
-(`sync.development.json`, `sync.production.json`). One shared file made the release read every
-book the development build had uploaded as "uploaded from here, gone from there" and switch it off.
+Because the two environments hold different books, each has its own ledger
+(`sync.development.json`, `sync.production.json`) and its own folder for the built helper
+(`sync-helper/build/<environment>/`). `syncEnvironment` picks both, so a helper is never paired
+with the other database's ledger: one shared file made the release read every book uploaded to
+Development as "uploaded from here, gone from there" and switch it off.
 
 Electrobun's packager signs every Mach-O it finds in the bundle with the app's own entitlements,
 wherever the file sits and whatever it is called, and offers no way to exclude one. Left alone it

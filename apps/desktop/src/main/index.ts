@@ -21,7 +21,7 @@ import { effectiveWereadKey, readSettings, writeSettings } from './settings';
 import { createWeread } from './weread/service';
 import { createWereadLogin } from './weread/login';
 import { DATA_DIR, library } from './store';
-import { installedSyncHelper } from './sync-helper';
+import { installedSyncHelper, syncEnvironment } from './sync-helper';
 import { ocrHelperPath } from './ocr-helper';
 import { ledgerName, syncedBytes, syncLedger } from './cloud-sync';
 import { voiceFor, type UiLocale } from '../shared/settings';
@@ -30,6 +30,7 @@ import type { CairnRPC } from '../shared/schema';
 const DEV_SERVER = 'http://localhost:5173';
 
 const devBuild = (await Updater.localInfo.channel()) === 'dev';
+const cloudEnvironment = syncEnvironment(devBuild, process.env);
 const menu = (locale?: UiLocale): void => installMenu(locale, { inspector: devBuild });
 
 // The trace switch is shown in dev builds only; one left on from before would stay on unseen
@@ -54,7 +55,7 @@ menu();
 const send = (): typeof rpc.send => rpc.send;
 
 const cloud = (): ReturnType<typeof cloudKitStore> | undefined => {
-  const helper = installedSyncHelper();
+  const helper = installedSyncHelper(cloudEnvironment);
   return helper ? cloudKitStore(helper) : undefined;
 };
 
@@ -68,7 +69,7 @@ const cloudSync = createAutoSync({
     if (await books.resume(bookId)) books.schedulerFor(bookId)?.finish();
   },
   finishing: (bookId) => books.schedulerFor(bookId)?.finishing ?? false,
-  ledger: syncLedger(join(DATA_DIR, ledgerName(devBuild))),
+  ledger: syncLedger(join(DATA_DIR, ledgerName(cloudEnvironment))),
   onStatus: (status) => send().cloudStatus(status),
   log: (what, cause) => console.error(what, cause),
 });

@@ -31,7 +31,8 @@ bun run build     # bundle the webview — catches node:* leaking into it
 bun run start     # the real desktop app
 bun run package   # a distributable .app, signed when ELECTROBUN_DEVELOPER_ID names an identity;
                   # with CAIRN_SYNC_PROFILE and scripts/signing first on PATH it carries the iCloud helper
-bun run sync-helper   # the Swift helper a development build uses; needs Xcode signed in to the team
+bun run sync-helper   # the Swift helper a development build uses; needs Xcode signed in to the team.
+                      # It reaches the release's iCloud; `sync-helper:development` builds the one for schema work
 bun run ocr-helper    # the OCR helper `bun run add-book` uses for a scanned PDF; any app build makes it too
 
 bun run ios:sample   # export the built-in book from the library into the iOS app (git-ignored)
@@ -365,7 +366,8 @@ Load-bearing. Breaking one silently undoes a decision that took real work to rea
   Nothing is uploaded until the owner turns on `icloudSync` in settings (off by default) or runs
   `bun run sync-book`. A book switched off there, or removed on the phone, is taken out of iCloud
   and recorded in the sync ledger beside the library (`sync.production.json`; a development build
-  writes to CloudKit's Development environment and keeps `sync.development.json`) so it is not
+  started with `CAIRN_SYNC_ENV=development` writes to CloudKit's Development environment and keeps
+  `sync.development.json`) so it is not
   uploaded again.
 - **The reader's place travels too, for a book in iCloud.** A `Progress` record in the book's zone
   holds the station, the second, when, and which kind of device (`Mac`, `iPhone`). The phone and

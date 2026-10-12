@@ -8,13 +8,14 @@ import { join } from 'node:path';
 import { EMPTY_LEDGER, parseLedger, type SyncLedger } from '@cairn/core/sync/auto';
 import { bookDir, type LibraryEntry } from '@cairn/core/store/library';
 import { DATA_DIR } from './store';
+import type { SyncEnvironment } from './sync-helper';
 
 /**
- * A development build's helper writes to CloudKit's Development environment and a release's to
- * Production. A shared ledger would make each read the other's uploads as removed from iCloud.
+ * CloudKit's Development and Production are separate databases. A shared ledger would make a
+ * build on one read the other's uploads as removed from iCloud.
  */
-export function ledgerName(devBuild: boolean): string {
-  return devBuild ? 'sync.development.json' : 'sync.production.json';
+export function ledgerName(environment: SyncEnvironment): string {
+  return `sync.${environment}.json`;
 }
 
 export function syncLedger(file: string): { read(): Promise<SyncLedger>; write(next: SyncLedger): Promise<void> } {

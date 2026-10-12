@@ -7,7 +7,8 @@
  *   bun run sync-book --all              every finished book in the library
  *   bun run sync-book --remove <bookId>  take a book out of iCloud
  *
- * Needs the helper: `cd apps/desktop && bun run sync-helper`.
+ * Needs the helper: `cd apps/desktop && bun run sync-helper`. Like `bun run start`, it reaches
+ * Production unless `CAIRN_SYNC_ENV=development` (then `bun run sync-helper:development`).
  */
 import { resolve } from 'node:path';
 import { cloudKitStore } from '../packages/core/src/runtime/cloudkit-helper';
@@ -16,10 +17,10 @@ import { normalizeEntry } from '../packages/core/src/store/library';
 import { zoneOf } from '../packages/core/src/sync/book';
 import { pushBook } from '../packages/core/src/sync/push';
 import { library } from '../apps/desktop/src/main/store';
+import { builtSyncHelper, syncEnvironment } from '../apps/desktop/src/main/sync-helper';
 
 const HELPER = process.env.CAIRN_SYNC_HELPER ?? resolve(
-  import.meta.dir,
-  '../apps/desktop/sync-helper/build/Build/Products/Debug/CairnSync.app/Contents/MacOS/CairnSync',
+  import.meta.dir, '../apps/desktop', builtSyncHelper(syncEnvironment(true, process.env)),
 );
 
 async function main(): Promise<void> {
