@@ -1,8 +1,21 @@
+diff --git a/node_modules/edge-tts-universal/.bun-tag-645fa0bcc8cd9a83 b/.bun-tag-645fa0bcc8cd9a83
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.js b/dist/index.js
-index 57650af17b7c3a513c2e770dde9ede5168a9fce6..e130fb2ffce7a6fe87c98c9c43daf4705f8bc571 100644
+index 57650af17b7c3a513c2e770dde9ede5168a9fce6..7a677372f6db592406650298d5c2e84f01635875 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -405,6 +405,7 @@ var Communicate = class {
+@@ -219,7 +219,8 @@ var TTSConfig = class _TTSConfig {
+ // src/constants.ts
+ var BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
+ var TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+-var WSS_URL = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
++// cairn: the legacy host answers synthesis with 403 since October 2026; this is where Edge 155 itself synthesises
++var WSS_URL = `wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1?Ocp-Apim-Subscription-Key=${TRUSTED_CLIENT_TOKEN}`;
+ var VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
+ var DEFAULT_VOICE = "en-US-EmmaMultilingualNeural";
+ var CHROMIUM_FULL_VERSION = "143.0.3650.75";
+@@ -405,6 +406,7 @@ var Communicate = class {
      });
      const messageQueue = [];
      let resolveMessage = null;
@@ -10,7 +23,7 @@ index 57650af17b7c3a513c2e770dde9ede5168a9fce6..e130fb2ffce7a6fe87c98c9c43daf470
      websocket.on("message", (message, isBinary) => {
        if (!isBinary) {
          const [headers, data] = getHeadersAndDataFromText(message);
-@@ -418,6 +419,7 @@ var Communicate = class {
+@@ -418,6 +420,7 @@ var Communicate = class {
              messageQueue.push(e);
            }
          } else if (path === "turn.end") {
@@ -18,7 +31,7 @@ index 57650af17b7c3a513c2e770dde9ede5168a9fce6..e130fb2ffce7a6fe87c98c9c43daf470
            this.state.offsetCompensation = this.state.lastDurationOffset;
            this.state.offsetCompensation += 875e4;
            websocket.close();
-@@ -453,6 +455,8 @@ var Communicate = class {
+@@ -453,6 +456,8 @@ var Communicate = class {
        if (resolveMessage) resolveMessage();
      });
      websocket.on("error", (error) => {
@@ -27,3 +40,17 @@ index 57650af17b7c3a513c2e770dde9ede5168a9fce6..e130fb2ffce7a6fe87c98c9c43daf470
        messageQueue.push(new WebSocketError(error.message));
        if (resolveMessage) resolveMessage();
      });
+@@ -460,7 +465,12 @@ var Communicate = class {
+       messageQueue.push("close");
+       if (resolveMessage) resolveMessage();
+     });
+-    await new Promise((resolve) => websocket.on("open", resolve));
++    // cairn: a refused handshake never opens, and waiting for `open` alone hung the stream forever
++    await new Promise((resolve, reject) => {
++      websocket.on("open", resolve);
++      websocket.on("error", (error) => reject(new WebSocketError(error.message)));
++      websocket.on("close", () => reject(new WebSocketError("closed before it opened")));
++    });
+     websocket.send(
+       `X-Timestamp:${dateToString()}\r
+ Content-Type:application/json; charset=utf-8\r

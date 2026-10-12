@@ -11,7 +11,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { Communicate, listVoices } from 'edge-tts-universal';
+import { Communicate } from 'edge-tts-universal';
 import type { DraftDeck, NodeDeck } from '../types';
 import {
   assembleDeck, cuesFromBoundaries, DEFAULT_VOICE, type Narrator, type SpeechBoundary,
@@ -20,6 +20,13 @@ import {
 import { CairnError } from '../errors';
 
 const CONNECT_TIMEOUT_MS = 20_000;
+const PROBE_TEXT = 'Cairn';
+const SPEAK_ATTEMPTS = 3;
+
+interface Speech {
+  readonly audio: Uint8Array;
+  readonly boundaries: readonly SpeechBoundary[];
+}
 
 let reachable = false;
 
@@ -37,8 +44,8 @@ export function forgetNarrationProbe(): void {
 export async function ensureNarrationReachable(): Promise<void> {
   if (reachable) return;
   try {
-    const voices = await listVoices();
-    if (voices.length === 0) throw new Error('empty voice list');
+    // Synthesised, not listed: the voice list kept answering while every synthesis got a 403
+    await run(PROBE_TEXT, DEFAULT_VOICE);
     reachable = true;
   } catch (cause) {
     throw new CairnError('tts_missing', {}, String(cause).slice(0, 300));
@@ -86,11 +93,29 @@ export async function synthesize(
   return assembleDeck(deck, cues, audioPath);
 }
 
+/** The service turns away about one connection in eight; failing the station would pay for its slides again. */
 async function run(
   text: string,
   voice: string,
   signal?: AbortSignal,
-): Promise<{ audio: Uint8Array; boundaries: readonly SpeechBoundary[] }> {
+): Promise<Speech> {
+  let last: unknown;
+  for (let n = 1; n <= SPEAK_ATTEMPTS; n += 1) {
+    try {
+      return await speakOnce(text, voice, signal);
+    } catch (cause) {
+      last = cause;
+      if (signal?.aborted) break;
+    }
+  }
+  throw last;
+}
+
+async function speakOnce(
+  text: string,
+  voice: string,
+  signal?: AbortSignal,
+): Promise<Speech> {
   const parts: Uint8Array[] = [];
   const boundaries: SpeechBoundary[] = [];
 
